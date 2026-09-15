@@ -2,7 +2,7 @@
 
 Para que o projeto React funcione, você precisará do **Node.js** instalado na sua máquina. O Node.js inclui o `npm` (Node Package Manager), que é o gerenciador de pacotes que baixa e configura todas as ferramentas e bibliotecas que o React precisa.
 
-Neste repositório, criamos a pasta `saude-conecta-web`, que já contém toda a estrutura do projeto React usando uma ferramenta moderna chamada **Vite**.
+Neste repositório, criamos a pasta `prontovital-web`, que já contém toda a estrutura do projeto React usando uma ferramenta moderna chamada **Vite**.
 
 ## Passo 1: Instalar o Node.js
 *Nota: Se você já tiver o Node.js instalado, pode pular esta etapa.*
@@ -20,10 +20,10 @@ Se ambos os comandos retornarem uma numeração (a versão), a instalação foi 
 
 ## Passo 2: Acessar a pasta do projeto
 
-O código do frontend (React) está dentro da pasta `saude-conecta-web`. Pelo terminal, navegue até ela:
+O código do frontend (React) está dentro da pasta `prontovital-web`. Pelo terminal, navegue até ela:
 
 ```bash
-cd saude-conecta-web
+cd prontovital-web
 ```
 
 ## Passo 3: Baixar as dependências (Pasta node_modules)
