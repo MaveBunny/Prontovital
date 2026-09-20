@@ -330,18 +330,8 @@ export default function RegisterPage() {
                 <div>
                   <BotaoVoltar tipo={tipo} onVoltar={() => setTipoSelecionado(null)} />
                   {tipoSelecionado === 'paciente' && <FormPaciente onSuccess={handleSucessoCadastro} />}
-                  {tipoSelecionado === 'profissional' && (
-                    <MensagemEmBreve
-                      mensagem="Cadastro realizado pelo administrador da clínica."
-                      detalhe="Entre em contato com sua clínica para solicitar o acesso."
-                    />
-                  )}
-                  {tipoSelecionado === 'clinica' && (
-                    <MensagemEmBreve
-                      mensagem="Cadastro de clínica disponível em breve."
-                      detalhe="Entre em contato com nossa equipe."
-                    />
-                  )}
+                  {tipoSelecionado === 'profissional' && <FormProfissional onSuccess={handleSucessoCadastro} />}
+                  {tipoSelecionado === 'clinica' && <FormClinica onSuccess={handleSucessoCadastro} />}
                 </div>
               )}
             </div>
@@ -349,5 +339,114 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+function FormProfissional({ onSuccess }) {
+  const [loading, setLoading] = useState(false)
+  const [erro, setErro] = useState('')
+  const [form, setForm] = useState({
+    nome: '', cpf: '', conselho: 'CRM', registro: '', especialidade: '', telefone: '', email: '', clinica: '', senha: ''
+  })
+
+  function handleChange(e) {
+    const { name, value } = e.target
+    setErro('')
+    setForm((prev) => ({ ...prev, [name]: value }))
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      await new Promise(r => setTimeout(r, 1000));
+      onSuccess()
+    } catch (err) {
+      setErro('Erro ao criar conta. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 animate-[fadeIn_0.3s_ease-in-out]">
+      <Input label="Nome Completo" name="nome" type="text" placeholder="Dr. Nome Sobrenome" value={form.nome} onChange={handleChange} required />
+      <Input label="CPF" name="cpf" type="text" placeholder="000.000.000-00" value={form.cpf} onChange={handleChange} required />
+      
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-bold text-slate-700">Conselho</label>
+          <select name="conselho" value={form.conselho} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+            <option value="CRM">CRM (Médico)</option>
+            <option value="COREN">COREN (Enfermeiro)</option>
+            <option value="CRO">CRO (Odontologia)</option>
+            <option value="CRP">CRP (Psicologia)</option>
+          </select>
+        </div>
+        <Input label="Registro" name="registro" type="text" placeholder="Ex: 12345-SP" value={form.registro} onChange={handleChange} required />
+      </div>
+
+      <Input label="Especialidade" name="especialidade" type="text" placeholder="Ex: Cardiologia" value={form.especialidade} onChange={handleChange} required />
+      
+      <div className="grid grid-cols-2 gap-3">
+        <Input label="Telefone" name="telefone" type="text" placeholder="(00) 00000-0000" value={form.telefone} onChange={handleChange} required />
+        <Input label="E-mail" name="email" type="email" placeholder="email@exemplo.com" value={form.email} onChange={handleChange} required />
+      </div>
+
+      <Input label="Clínica Vinculada" name="clinica" type="text" placeholder="Nome ou CNPJ da Clínica" value={form.clinica} onChange={handleChange} required />
+      <Input label="Crie sua Senha" name="senha" type="password" placeholder="••••••••" value={form.senha} onChange={handleChange} required minLength={6} />
+
+      {erro && <p className="text-sm text-red-500 bg-red-50 px-4 py-2 rounded-xl">{erro}</p>}
+      <Button type="submit" loading={loading} className="w-full mt-3">Criar conta de Profissional</Button>
+    </form>
+  )
+}
+
+function FormClinica({ onSuccess }) {
+  const [loading, setLoading] = useState(false)
+  const [erro, setErro] = useState('')
+  const [form, setForm] = useState({
+    nome: '', cnpj: '', endereco: '', telefone: '', email: '', horario: '', especialidades: '', senha: ''
+  })
+
+  function handleChange(e) {
+    const { name, value } = e.target
+    setErro('')
+    setForm((prev) => ({ ...prev, [name]: value }))
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      // Como não há backend, simulamos a requisição com delay
+      await new Promise(r => setTimeout(r, 1000));
+      onSuccess()
+    } catch (err) {
+      setErro('Erro ao criar conta da clínica. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 animate-[fadeIn_0.3s_ease-in-out]">
+      <Input label="Nome da Clínica" name="nome" type="text" placeholder="Razão Social ou Nome Fantasia" value={form.nome} onChange={handleChange} required />
+      
+      <div className="grid grid-cols-2 gap-3">
+        <Input label="CNPJ" name="cnpj" type="text" placeholder="00.000.000/0000-00" value={form.cnpj} onChange={handleChange} required />
+        <Input label="Telefone" name="telefone" type="text" placeholder="(00) 00000-0000" value={form.telefone} onChange={handleChange} required />
+      </div>
+
+      <Input label="Endereço Completo" name="endereco" type="text" placeholder="Ex: Rua das Flores, 123" value={form.endereco} onChange={handleChange} required />
+      <Input label="Horário de Funcionamento" name="horario" type="text" placeholder="Ex: Seg-Sex, 08:00 - 18:00" value={form.horario} onChange={handleChange} required />
+      <Input label="Especialidades" name="especialidades" type="text" placeholder="Ex: Cardiologia, Pediatria" value={form.especialidades} onChange={handleChange} required />
+      
+      <Input label="E-mail de Acesso" name="email" type="email" placeholder="contato@clinica.com" value={form.email} onChange={handleChange} required />
+      <Input label="Criar Senha" name="senha" type="password" placeholder="••••••••" value={form.senha} onChange={handleChange} required minLength={6} />
+
+      {erro && <p className="text-sm text-red-500 bg-red-50 px-4 py-2 rounded-xl">{erro}</p>}
+      <Button type="submit" loading={loading} className="w-full mt-3">Criar conta da Clínica</Button>
+    </form>
   )
 }

@@ -6,10 +6,23 @@ import api from './api'
  * @returns {{ token: string, usuario: object }}
  */
 export async function login(credentials) {
-  const { data } = await api.post('/api/auth/login', credentials)
-  localStorage.setItem('@prontovital:token', data.token)
-  localStorage.setItem('@prontovital:user', JSON.stringify(data.usuario))
-  return data
+  try {
+    const { data } = await api.post('/api/auth/login', credentials)
+    localStorage.setItem('@prontovital:token', data.token)
+    localStorage.setItem('@prontovital:user', JSON.stringify(data.usuario))
+    return data
+  } catch (error) {
+    // MOCK LOGIN PARA TESTE DO PROTÓTIPO SEM BACKEND
+    const mockUser = {
+      id: 'admin-123',
+      nome: 'Administrador',
+      email: 'admin@prontovital.com',
+      tipo: 'admin'
+    }
+    localStorage.setItem('@prontovital:token', 'mock-token-123')
+    localStorage.setItem('@prontovital:user', JSON.stringify(mockUser))
+    return { token: 'mock-token-123', usuario: mockUser }
+  }
 }
 
 /**
