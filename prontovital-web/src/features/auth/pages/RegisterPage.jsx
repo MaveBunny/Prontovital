@@ -52,6 +52,91 @@ const TIPOS_SANGUINEOS = [
   { value: 'O+', label: 'O+' }, { value: 'O-', label: 'O-' },
 ]
 
+// ─── Ícones das features ──────────────────────────────────────────────────────
+
+function IconeTriagem() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15" />
+    </svg>
+  )
+}
+
+function IconeAgendamento() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+    </svg>
+  )
+}
+
+function IconeRede() {
+  return (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+    </svg>
+  )
+}
+
+// ─── Painel Esquerdo ──────────────────────────────────────────────────────────
+
+function PainelEsquerdo() {
+  return (
+    <div className="hidden lg:flex lg:w-[45%] xl:w-[42%] bg-[#1B2438] text-white flex-col justify-between p-10 xl:p-14 min-h-screen rounded-r-3xl">
+      {/* Logo */}
+      <div>
+        <div className="mb-16">
+          <h2 className="text-xl font-bold tracking-tight">
+            Pronto<span className="text-blue-400">Vital</span>
+          </h2>
+          <p className="text-sm text-slate-400 mt-0.5">Plataforma de Saúde Digital</p>
+        </div>
+
+        {/* Headline */}
+        <div className="mb-10">
+          <h1 className="text-3xl xl:text-4xl font-extrabold leading-tight tracking-tight">
+            Do primeiro sintoma ao atendimento.
+          </h1>
+          <p className="text-sm text-slate-400 mt-4 leading-relaxed max-w-sm">
+            Faça sua pré-triagem em casa, organize seus sintomas com apoio da IA e encontre profissionais para agendar sua consulta de forma simples e rápida.
+          </p>
+        </div>
+
+        {/* Features */}
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+              <IconeTriagem />
+            </div>
+            <span className="text-sm font-medium">Pré-triagem com inteligência artificial</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+              <IconeAgendamento />
+            </div>
+            <span className="text-sm font-medium">Agendamento de consultas online</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+              <IconeRede />
+            </div>
+            <span className="text-sm font-medium">Rede de clínicas e especialistas</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="pt-10">
+        <div className="border-t border-white/10 pt-6">
+          <p className="text-xs text-slate-500">
+            ProntoVital — cuidado conectado em um só lugar.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Subcomponentes ───────────────────────────────────────────────────────────
 
 function BotaoVoltar({ onVoltar, tipo }) {
@@ -168,91 +253,101 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Header */}
-      <div className="px-6 pt-14 pb-6">
-        <h1 className="text-2xl font-bold text-slate-900 leading-tight">
-          Do primeiro sintoma ao<br />atendimento.
-        </h1>
-        <p className="text-sm text-blue-600 mt-1">
-          Pré-triagem, busca e agendamento em um só lugar.
-        </p>
-      </div>
+    <div className="min-h-screen bg-slate-50 flex flex-row">
+      {/* ── Painel Esquerdo (desktop) ── */}
+      <PainelEsquerdo />
 
-      {/* Card */}
-      <div className="flex-1 mx-4 bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-        {/* Abas */}
-        <div className="flex border-b border-slate-100">
-          {[
-            { id: 'entrar', label: 'Entrar' },
-            { id: 'cadastrar', label: 'Cadastrar' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => handleMudarAba(tab.id)}
-              className={`flex-1 py-4 text-sm font-medium transition-colors ${
-                aba === tab.id
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+      {/* ── Painel Direito ── */}
+      <div className="flex-1 flex flex-col">
+        {/* Header mobile — visível apenas em telas pequenas */}
+        <div className="lg:hidden px-6 pt-10 pb-4 bg-[#1B2438] text-white">
+          <h2 className="text-lg font-bold tracking-tight">
+            Pronto<span className="text-blue-400">Vital</span>
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">Plataforma de Saúde Digital</p>
+          <h1 className="text-xl font-extrabold mt-6 leading-tight">
+            Do primeiro sintoma ao atendimento.
+          </h1>
+          <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+            Faça sua pré-triagem em casa, organize seus sintomas com apoio da IA e encontre profissionais para agendar sua consulta de forma simples e rápida.
+          </p>
         </div>
 
-        <div className="px-6 py-6">
-          {/* ── ABA ENTRAR ── */}
-          {aba === 'entrar' && <LoginPage />}
-
-          {/* ── ABA CADASTRAR: seleção de tipo ── */}
-          {aba === 'cadastrar' && !tipoSelecionado && (
-            <div className="flex flex-col gap-3">
-              <p className="text-sm text-slate-500 mb-1">Selecione o tipo de cadastro:</p>
-              {TIPOS.map((t) => (
+        {/* Card de formulário */}
+        <div className="flex-1 flex items-start lg:items-center justify-center px-4 py-8 lg:px-12 lg:py-0">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden lg:my-8">
+            {/* Abas */}
+            <div className="flex border-b border-slate-100">
+              {[
+                { id: 'entrar', label: 'Entrar' },
+                { id: 'cadastrar', label: 'Cadastrar' },
+              ].map((tab) => (
                 <button
-                  key={t.id}
-                  onClick={() => setTipoSelecionado(t.id)}
-                  className="flex items-center gap-4 px-4 py-4 rounded-2xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all text-left group"
+                  key={tab.id}
+                  onClick={() => handleMudarAba(tab.id)}
+                  className={`flex-1 py-4 text-sm font-medium transition-colors ${
+                    aba === tab.id
+                      ? 'text-slate-900 border-b-2 border-slate-900'
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
                 >
-                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
-                    {t.icone}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-800">{t.titulo}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{t.descricao}</p>
-                  </div>
-                  <svg className="w-4 h-4 text-slate-300 group-hover:text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-                  </svg>
+                  {tab.label}
                 </button>
               ))}
             </div>
-          )}
 
-          {/* ── ABA CADASTRAR: formulário do tipo selecionado ── */}
-          {aba === 'cadastrar' && tipoSelecionado && tipo && (
-            <div>
-              <BotaoVoltar tipo={tipo} onVoltar={() => setTipoSelecionado(null)} />
-              {tipoSelecionado === 'paciente' && <FormPaciente onSuccess={handleSucessoCadastro} />}
-              {tipoSelecionado === 'profissional' && (
-                <MensagemEmBreve
-                  mensagem="Cadastro realizado pelo administrador da clínica."
-                  detalhe="Entre em contato com sua clínica para solicitar o acesso."
-                />
+            <div className="px-6 py-6 max-h-[70vh] overflow-y-auto">
+              {/* ── ABA ENTRAR ── */}
+              {aba === 'entrar' && <LoginPage />}
+
+              {/* ── ABA CADASTRAR: seleção de tipo ── */}
+              {aba === 'cadastrar' && !tipoSelecionado && (
+                <div className="flex flex-col gap-3">
+                  <p className="text-sm text-slate-500 mb-1">Selecione o tipo de cadastro:</p>
+                  {TIPOS.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setTipoSelecionado(t.id)}
+                      className="flex items-center gap-4 px-4 py-4 rounded-2xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all text-left group"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
+                        {t.icone}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800">{t.titulo}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{t.descricao}</p>
+                      </div>
+                      <svg className="w-4 h-4 text-slate-300 group-hover:text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
               )}
-              {tipoSelecionado === 'clinica' && (
-                <MensagemEmBreve
-                  mensagem="Cadastro de clínica disponível em breve."
-                  detalhe="Entre em contato com nossa equipe."
-                />
+
+              {/* ── ABA CADASTRAR: formulário do tipo selecionado ── */}
+              {aba === 'cadastrar' && tipoSelecionado && tipo && (
+                <div>
+                  <BotaoVoltar tipo={tipo} onVoltar={() => setTipoSelecionado(null)} />
+                  {tipoSelecionado === 'paciente' && <FormPaciente onSuccess={handleSucessoCadastro} />}
+                  {tipoSelecionado === 'profissional' && (
+                    <MensagemEmBreve
+                      mensagem="Cadastro realizado pelo administrador da clínica."
+                      detalhe="Entre em contato com sua clínica para solicitar o acesso."
+                    />
+                  )}
+                  {tipoSelecionado === 'clinica' && (
+                    <MensagemEmBreve
+                      mensagem="Cadastro de clínica disponível em breve."
+                      detalhe="Entre em contato com nossa equipe."
+                    />
+                  )}
+                </div>
               )}
             </div>
-          )}
+          </div>
         </div>
       </div>
-
-      <div className="h-8" />
     </div>
   )
 }

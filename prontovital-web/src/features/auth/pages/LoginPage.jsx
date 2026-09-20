@@ -3,49 +3,55 @@ import { useNavigate } from 'react-router-dom'
 import Button from '../../../components/shared/Button'
 import Input from '../../../components/shared/Input'
 import { useAuth } from '../../../shared/hooks/useAuth'
+import { mascaraCPF } from '../../../shared/utils/cpfMask'
 
 export default function LoginPage() {
   const { login, carregando } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ email: '', senha: '' })
+  const [form, setForm] = useState({ cpf: '', senha: '' })
   const [erro, setErro] = useState('')
 
   function handleChange(e) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+    const { name, value } = e.target
     setErro('')
+    setForm((prev) => ({
+      ...prev,
+      [name]: name === 'cpf' ? mascaraCPF(value) : value,
+    }))
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
     setErro('')
     try {
-      const data = await login(form)
+      const data = await login({ email: form.cpf.replace(/\D/g, ''), senha: form.senha })
       const tipo = data.usuario?.tipo
       if (tipo === 'profissional') return navigate('/profissional/dashboard')
       if (tipo === 'clinica') return navigate('/clinica/dashboard')
       if (tipo === 'admin') return navigate('/admin/clinicas')
       navigate('/paciente/dashboard')
     } catch (err) {
-      setErro(err.response?.data?.message || 'E-mail/CPF ou senha incorretos.')
+      setErro(err.response?.data?.message || 'CPF ou senha incorretos.')
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <Input
-        label="E-mail ou CPF"
-        name="email"
+        label="CPF"
+        name="cpf"
         type="text"
-        placeholder="email@exemplo.com"
-        value={form.email}
+        placeholder="000.000.000-00"
+        value={form.cpf}
         onChange={handleChange}
+        maxLength={14}
         required
       />
       <Input
         label="Senha"
         name="senha"
         type="password"
-        placeholder="Sua senha"
+        placeholder="••••••••"
         value={form.senha}
         onChange={handleChange}
         required
