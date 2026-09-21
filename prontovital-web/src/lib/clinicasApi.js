@@ -6,8 +6,8 @@ export async function listarClinicas(params = {}) {
   return data
 }
 
-/** POST /api/clinicas — Cadastrar Clínica (admin) */
+/** POST /usuarios - Cadastrar Clínica */
 export async function cadastrarClinica(payload) {
-  const { data } = await api.post('/api/clinicas', payload)
+  const { data } = await api.post('/usuarios', payload)
   return data
 }

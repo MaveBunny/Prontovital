@@ -6,8 +6,8 @@ export async function buscarProfissionais(params = {}) {
   return data
 }
 
-/** POST /api/profissionais — Cadastrar Profissional (admin) */
+/** POST /usuarios - Cadastrar Profissional */
 export async function cadastrarProfissional(payload) {
-  const { data } = await api.post('/api/profissionais', payload)
+  const { data } = await api.post('/usuarios', payload)
   return data
 }

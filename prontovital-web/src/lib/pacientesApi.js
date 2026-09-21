@@ -1,8 +1,8 @@
 import api from './api'
 
-/** POST /api/pacientes — Cadastrar Paciente (público) */
+/** POST /usuarios - Cadastrar Paciente */
 export async function cadastrarPaciente(payload) {
-  const { data } = await api.post('/api/pacientes', payload)
+  const { data } = await api.post('/usuarios', payload)
   return data
 }
 

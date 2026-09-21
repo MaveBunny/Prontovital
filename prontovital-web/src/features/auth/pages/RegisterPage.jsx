@@ -4,6 +4,8 @@ import Button from '../../../components/shared/Button'
 import Input from '../../../components/shared/Input'
 import Select from '../../../components/shared/Select'
 import { cadastrarPaciente } from '../../../lib/pacientesApi'
+import { cadastrarClinica } from '../../../lib/clinicasApi'
+import { cadastrarProfissional } from '../../../lib/profissionaisApi'
 import { mascaraCPF } from '../../../shared/utils/cpfMask'
 import LoginPage from './LoginPage'
 
@@ -159,8 +161,9 @@ function FormPaciente({ onSuccess }) {
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState('')
   const [form, setForm] = useState({
-    nome: '', cpf: '', email: '', senha: '',
-    tipoSanguineo: '', alergias: '', medicamentos: '', comorbidades: '',
+    nome: '', email: '', senha: '',
+    endereco: '', cidade: '', estado: '', telefone: '',
+    cpf: '', data_nascimento: '', sexo: 'Masculino', observacoes: ''
   })
 
   function handleChange(e) {
@@ -176,18 +179,23 @@ function FormPaciente({ onSuccess }) {
     e.preventDefault()
     setLoading(true)
     try {
-      await cadastrarPaciente({
+      const payload = {
         nome: form.nome,
-        cpf: form.cpf.replace(/\D/g, ''),
         email: form.email,
         senha: form.senha,
-        dadosSaude: {
-          tipoSanguineo: form.tipoSanguineo || undefined,
-          alergias: form.alergias || undefined,
-          medicamentos: form.medicamentos || undefined,
-          comorbidades: form.comorbidades || undefined,
-        },
-      })
+        endereco: form.endereco,
+        cidade: form.cidade,
+        estado: form.estado,
+        telefone: form.telefone.replace(/\D/g, ''),
+        perfil: "paciente",
+        paciente: {
+          cpf: form.cpf.replace(/\D/g, ''),
+          data_nascimento: form.data_nascimento,
+          sexo: form.sexo,
+          observacoes: form.observacoes || "Nenhuma observação"
+        }
+      }
+      await cadastrarPaciente(payload)
       onSuccess()
     } catch (err) {
       setErro(err.response?.data?.message || 'Erro ao criar conta. Tente novamente.')
@@ -197,24 +205,39 @@ function FormPaciente({ onSuccess }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 animate-[fadeIn_0.3s_ease-in-out]">
       <Input label="Nome completo" name="nome" type="text" placeholder="Seu nome" value={form.nome} onChange={handleChange} required />
-      <Input label="CPF" name="cpf" type="text" placeholder="000.000.000-00" value={form.cpf} onChange={handleChange} maxLength={14} required />
       <Input label="E-mail" name="email" type="email" placeholder="email@exemplo.com" value={form.email} onChange={handleChange} required />
       <Input label="Senha" name="senha" type="password" placeholder="Crie uma senha" value={form.senha} onChange={handleChange} required minLength={6} />
+      
+      <div className="grid grid-cols-2 gap-3">
+        <Input label="Telefone" name="telefone" type="text" placeholder="(00) 00000-0000" value={form.telefone} onChange={handleChange} required />
+        <Input label="CPF" name="cpf" type="text" placeholder="000.000.000-00" value={form.cpf} onChange={handleChange} maxLength={14} required />
+      </div>
 
-      <div className="pt-1">
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Dados de Saúde (Opcional)</p>
-        <div className="flex flex-col gap-4">
-          <Select label="Tipo sanguíneo" name="tipoSanguineo" options={TIPOS_SANGUINEOS} placeholder="Selecione" value={form.tipoSanguineo} onChange={handleChange} />
-          <Input label="Alergias" name="alergias" type="text" placeholder="Ex: Penicilina, Dipirona" value={form.alergias} onChange={handleChange} />
-          <Input label="Medicamentos em uso" name="medicamentos" type="text" placeholder="Ex: Losartana 50mg, Metformina" value={form.medicamentos} onChange={handleChange} />
-          <Input label="Comorbidades" name="comorbidades" type="text" placeholder="Ex: Diabetes, Hipertensão" value={form.comorbidades} onChange={handleChange} />
+      <div className="grid grid-cols-3 gap-3">
+        <div className="col-span-3">
+          <Input label="Endereço" name="endereco" type="text" placeholder="Sua rua e número" value={form.endereco} onChange={handleChange} required />
+        </div>
+        <div className="col-span-2">
+          <Input label="Cidade" name="cidade" type="text" placeholder="Sua cidade" value={form.cidade} onChange={handleChange} required />
+        </div>
+        <Input label="Estado (UF)" name="estado" type="text" placeholder="Ex: PE" value={form.estado} onChange={handleChange} maxLength={2} required />
+      </div>
+
+      <div className="pt-2 border-t border-slate-100 mt-2">
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Dados de Paciente</p>
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Data de Nasc." name="data_nascimento" type="text" placeholder="DD/MM/AAAA" value={form.data_nascimento} onChange={handleChange} required />
+          <Select label="Sexo" name="sexo" options={[{value: 'Masculino', label: 'Masculino'}, {value: 'Feminino', label: 'Feminino'}, {value: 'Outro', label: 'Outro'}]} value={form.sexo} onChange={handleChange} required />
+        </div>
+        <div className="mt-3">
+          <Input label="Observações Médicas" name="observacoes" type="text" placeholder="Alergias, comorbidades..." value={form.observacoes} onChange={handleChange} />
         </div>
       </div>
 
-      {erro && <p className="text-sm text-red-500 bg-red-50 px-4 py-2 rounded-xl">{erro}</p>}
-      <Button type="submit" loading={loading} className="w-full mt-2">Criar conta</Button>
+      {erro && <p className="text-sm text-red-500 bg-red-50 px-4 py-2 rounded-xl mt-1">{erro}</p>}
+      <Button type="submit" loading={loading} className="w-full mt-3">Criar conta de Paciente</Button>
     </form>
   )
 }
@@ -346,23 +369,44 @@ function FormProfissional({ onSuccess }) {
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState('')
   const [form, setForm] = useState({
-    nome: '', cpf: '', conselho: 'CRM', registro: '', especialidade: '', telefone: '', email: '', clinica: '', senha: ''
+    nome: '', email: '', senha: '',
+    endereco: '', cidade: '', estado: '', telefone: '',
+    cpf: '', conselho: 'CRM', registro_profissional: '', uf_registro: ''
   })
 
   function handleChange(e) {
     const { name, value } = e.target
     setErro('')
-    setForm((prev) => ({ ...prev, [name]: value }))
+    setForm((prev) => ({
+      ...prev,
+      [name]: name === 'cpf' ? mascaraCPF(value) : value,
+    }))
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
     setLoading(true)
     try {
-      await new Promise(r => setTimeout(r, 1000));
+      const payload = {
+        nome: form.nome,
+        email: form.email,
+        senha: form.senha,
+        endereco: form.endereco,
+        cidade: form.cidade,
+        estado: form.estado,
+        telefone: form.telefone.replace(/\D/g, ''),
+        perfil: "profissional",
+        profissional: {
+          cpf: form.cpf.replace(/\D/g, ''),
+          conselho: form.conselho,
+          registro_profissional: form.registro_profissional,
+          uf_registro: form.uf_registro
+        }
+      }
+      await cadastrarProfissional(payload)
       onSuccess()
     } catch (err) {
-      setErro('Erro ao criar conta. Tente novamente.')
+      setErro(err.response?.data?.message || 'Erro ao criar conta. Tente novamente.')
     } finally {
       setLoading(false)
     }
@@ -371,30 +415,38 @@ function FormProfissional({ onSuccess }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 animate-[fadeIn_0.3s_ease-in-out]">
       <Input label="Nome Completo" name="nome" type="text" placeholder="Dr. Nome Sobrenome" value={form.nome} onChange={handleChange} required />
-      <Input label="CPF" name="cpf" type="text" placeholder="000.000.000-00" value={form.cpf} onChange={handleChange} required />
-      
-      <div className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-bold text-slate-700">Conselho</label>
-          <select name="conselho" value={form.conselho} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
-            <option value="CRM">CRM (Médico)</option>
-            <option value="COREN">COREN (Enfermeiro)</option>
-            <option value="CRO">CRO (Odontologia)</option>
-            <option value="CRP">CRP (Psicologia)</option>
-          </select>
-        </div>
-        <Input label="Registro" name="registro" type="text" placeholder="Ex: 12345-SP" value={form.registro} onChange={handleChange} required />
-      </div>
-
-      <Input label="Especialidade" name="especialidade" type="text" placeholder="Ex: Cardiologia" value={form.especialidade} onChange={handleChange} required />
+      <Input label="E-mail" name="email" type="email" placeholder="email@exemplo.com" value={form.email} onChange={handleChange} required />
+      <Input label="Criar Senha" name="senha" type="password" placeholder="••••••••" value={form.senha} onChange={handleChange} required minLength={6} />
       
       <div className="grid grid-cols-2 gap-3">
         <Input label="Telefone" name="telefone" type="text" placeholder="(00) 00000-0000" value={form.telefone} onChange={handleChange} required />
-        <Input label="E-mail" name="email" type="email" placeholder="email@exemplo.com" value={form.email} onChange={handleChange} required />
+        <Input label="CPF" name="cpf" type="text" placeholder="000.000.000-00" value={form.cpf} onChange={handleChange} maxLength={14} required />
       </div>
 
-      <Input label="Clínica Vinculada" name="clinica" type="text" placeholder="Nome ou CNPJ da Clínica" value={form.clinica} onChange={handleChange} required />
-      <Input label="Crie sua Senha" name="senha" type="password" placeholder="••••••••" value={form.senha} onChange={handleChange} required minLength={6} />
+      <div className="grid grid-cols-3 gap-3">
+        <div className="col-span-3">
+          <Input label="Endereço" name="endereco" type="text" placeholder="Rua do Pombal" value={form.endereco} onChange={handleChange} required />
+        </div>
+        <div className="col-span-2">
+          <Input label="Cidade" name="cidade" type="text" placeholder="Recife" value={form.cidade} onChange={handleChange} required />
+        </div>
+        <Input label="Estado (UF)" name="estado" type="text" placeholder="PE" value={form.estado} onChange={handleChange} maxLength={2} required />
+      </div>
+
+      <div className="pt-2 border-t border-slate-100 mt-2">
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Dados Profissionais</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="col-span-3 sm:col-span-1">
+            <Select label="Conselho" name="conselho" options={[{value: 'CRM', label: 'CRM'}, {value: 'COREN', label: 'COREN'}, {value: 'CRO', label: 'CRO'}, {value: 'CRP', label: 'CRP'}]} value={form.conselho} onChange={handleChange} required />
+          </div>
+          <div className="col-span-2 sm:col-span-1">
+            <Input label="Registro" name="registro_profissional" type="text" placeholder="Ex: 12345" value={form.registro_profissional} onChange={handleChange} required />
+          </div>
+          <div className="col-span-1 sm:col-span-1">
+            <Input label="UF Reg." name="uf_registro" type="text" placeholder="Ex: PE" value={form.uf_registro} onChange={handleChange} maxLength={2} required />
+          </div>
+        </div>
+      </div>
 
       {erro && <p className="text-sm text-red-500 bg-red-50 px-4 py-2 rounded-xl">{erro}</p>}
       <Button type="submit" loading={loading} className="w-full mt-3">Criar conta de Profissional</Button>
@@ -406,7 +458,9 @@ function FormClinica({ onSuccess }) {
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState('')
   const [form, setForm] = useState({
-    nome: '', cnpj: '', endereco: '', telefone: '', email: '', horario: '', especialidades: '', senha: ''
+    nome: '', email: '', senha: '',
+    endereco: '', cidade: '', estado: '', telefone: '',
+    cnpj: ''
   })
 
   function handleChange(e) {
@@ -419,11 +473,23 @@ function FormClinica({ onSuccess }) {
     e.preventDefault()
     setLoading(true)
     try {
-      // Como não há backend, simulamos a requisição com delay
-      await new Promise(r => setTimeout(r, 1000));
+      const payload = {
+        nome: form.nome,
+        email: form.email,
+        senha: form.senha,
+        endereco: form.endereco,
+        cidade: form.cidade,
+        estado: form.estado,
+        telefone: form.telefone.replace(/\D/g, ''),
+        perfil: "clinica",
+        clinica: {
+          cnpj: form.cnpj.replace(/\D/g, '')
+        }
+      }
+      await cadastrarClinica(payload)
       onSuccess()
     } catch (err) {
-      setErro('Erro ao criar conta da clínica. Tente novamente.')
+      setErro(err.response?.data?.message || 'Erro ao criar conta da clínica. Tente novamente.')
     } finally {
       setLoading(false)
     }
@@ -432,20 +498,25 @@ function FormClinica({ onSuccess }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 animate-[fadeIn_0.3s_ease-in-out]">
       <Input label="Nome da Clínica" name="nome" type="text" placeholder="Razão Social ou Nome Fantasia" value={form.nome} onChange={handleChange} required />
+      <Input label="E-mail" name="email" type="email" placeholder="contato@clinica.com" value={form.email} onChange={handleChange} required />
+      <Input label="Criar Senha" name="senha" type="password" placeholder="••••••••" value={form.senha} onChange={handleChange} required minLength={6} />
       
       <div className="grid grid-cols-2 gap-3">
-        <Input label="CNPJ" name="cnpj" type="text" placeholder="00.000.000/0000-00" value={form.cnpj} onChange={handleChange} required />
         <Input label="Telefone" name="telefone" type="text" placeholder="(00) 00000-0000" value={form.telefone} onChange={handleChange} required />
+        <Input label="CNPJ" name="cnpj" type="text" placeholder="00.000.000/0000-00" value={form.cnpj} onChange={handleChange} required />
       </div>
 
-      <Input label="Endereço Completo" name="endereco" type="text" placeholder="Ex: Rua das Flores, 123" value={form.endereco} onChange={handleChange} required />
-      <Input label="Horário de Funcionamento" name="horario" type="text" placeholder="Ex: Seg-Sex, 08:00 - 18:00" value={form.horario} onChange={handleChange} required />
-      <Input label="Especialidades" name="especialidades" type="text" placeholder="Ex: Cardiologia, Pediatria" value={form.especialidades} onChange={handleChange} required />
-      
-      <Input label="E-mail de Acesso" name="email" type="email" placeholder="contato@clinica.com" value={form.email} onChange={handleChange} required />
-      <Input label="Criar Senha" name="senha" type="password" placeholder="••••••••" value={form.senha} onChange={handleChange} required minLength={6} />
+      <div className="grid grid-cols-3 gap-3">
+        <div className="col-span-3">
+          <Input label="Endereço" name="endereco" type="text" placeholder="Rua, Número" value={form.endereco} onChange={handleChange} required />
+        </div>
+        <div className="col-span-2">
+          <Input label="Cidade" name="cidade" type="text" placeholder="Ex: Recife" value={form.cidade} onChange={handleChange} required />
+        </div>
+        <Input label="Estado (UF)" name="estado" type="text" placeholder="Ex: PE" value={form.estado} onChange={handleChange} maxLength={2} required />
+      </div>
 
-      {erro && <p className="text-sm text-red-500 bg-red-50 px-4 py-2 rounded-xl">{erro}</p>}
+      {erro && <p className="text-sm text-red-500 bg-red-50 px-4 py-2 rounded-xl mt-1">{erro}</p>}
       <Button type="submit" loading={loading} className="w-full mt-3">Criar conta da Clínica</Button>
     </form>
   )
