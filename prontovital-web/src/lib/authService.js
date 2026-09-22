@@ -12,12 +12,15 @@ export async function login(credentials) {
     localStorage.setItem('@prontovital:user', JSON.stringify(data.usuario))
     return data
   } catch (error) {
-    // MOCK LOGIN PARA TESTE DO PROTÓTIPO SEM BACKEND
+    if (error.response) {
+      throw error
+    }
+    // Fallback apenas se o backend estiver totalmente offline
     const mockUser = {
       id: 'admin-123',
-      nome: 'Administrador',
-      email: 'admin@prontovital.com',
-      tipo: 'admin'
+      nome: 'Administrador (Offline)',
+      email: credentials.email || 'admin@prontovital.com',
+      tipo: 'paciente'
     }
     localStorage.setItem('@prontovital:token', 'mock-token-123')
     localStorage.setItem('@prontovital:user', JSON.stringify(mockUser))
