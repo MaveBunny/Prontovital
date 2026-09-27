@@ -14,10 +14,10 @@ export async function login(credentials) {
   } catch (error) {
     // MOCK LOGIN PARA TESTE DO PROTÓTIPO SEM BACKEND
     const mockUser = {
-      id: 'admin-123',
-      nome: 'Administrador',
-      email: 'admin@prontovital.com',
-      tipo: 'admin'
+      id: 'clinica-123',
+      nome: 'Clínica Saúde Ilha do Leite',
+      email: 'gestao@ilhaleite.com',
+      tipo: 'clinica'
     }
     localStorage.setItem('@prontovital:token', 'mock-token-123')
     localStorage.setItem('@prontovital:user', JSON.stringify(mockUser))
