@@ -1,19 +1,26 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import PacienteLayout from './components/PacienteLayout'
-import Dashboard from './pages/Dashboard'
-import EditarPerfilPage from './pages/EditarPerfilPage'
-import PerfilPage from './pages/PerfilPage'
+import PreTriagemPage from './pages/PreTriagemPage'
+import ClinicasPage from './pages/ClinicasPage'
+import ProfissionaisPage from './pages/ProfissionaisPage'
+import MeusAgendamentosPage from './pages/MeusAgendamentosPage'
+import HistoricoTriagensPage from './pages/HistoricoTriagensPage'
+import MeuPerfilPage from './pages/MeuPerfilPage'
 
 export default function PacienteRoutes() {
   return (
     <Routes>
       <Route element={<PacienteLayout />}>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="perfil" element={<PerfilPage />} />
-        <Route path="editar-perfil" element={<EditarPerfilPage />} />
-        <Route path="triagem" element={<Navigate to="/triagem/iniciar" replace />} />
-        <Route path="agendamentos" element={<div className="p-6 text-slate-400 text-center mt-10">Agendamentos em breve</div>} />
+        <Route index element={<Navigate to="pre-triagem" replace />} />
+        <Route path="pre-triagem" element={<PreTriagemPage />} />
+        <Route path="clinicas" element={<ClinicasPage />} />
+        <Route path="profissionais" element={<ProfissionaisPage />} />
+        <Route path="agendamentos" element={<MeusAgendamentosPage />} />
+        <Route path="historico-triagens" element={<HistoricoTriagensPage />} />
+        <Route path="perfil" element={<MeuPerfilPage />} />
+        {/* Compatibilidade de rotas antigas */}
+        <Route path="dashboard" element={<Navigate to="pre-triagem" replace />} />
+        <Route path="triagem" element={<Navigate to="pre-triagem" replace />} />
       </Route>
     </Routes>
   )

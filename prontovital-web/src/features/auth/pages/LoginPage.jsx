@@ -3,48 +3,47 @@ import { useNavigate } from 'react-router-dom'
 import Button from '../../../components/shared/Button'
 import Input from '../../../components/shared/Input'
 import { useAuth } from '../../../shared/hooks/useAuth'
-import { mascaraCPF } from '../../../shared/utils/cpfMask'
 
 export default function LoginPage() {
   const { login, carregando } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ cpf: '', senha: '' })
+  const [form, setForm] = useState({ loginId: '', senha: '' })
   const [erro, setErro] = useState('')
 
   function handleChange(e) {
     const { name, value } = e.target
     setErro('')
-    setForm((prev) => ({
-      ...prev,
-      [name]: name === 'cpf' ? mascaraCPF(value) : value,
-    }))
+    setForm((prev) => ({ ...prev, [name]: value }))
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
     setErro('')
     try {
-      const data = await login({ email: form.cpf.replace(/\D/g, ''), senha: form.senha })
-      const tipo = data.usuario?.tipo
+      const data = await login({ email: form.loginId, senha: form.senha })
+      const tipo = data.usuario?.tipo || 'paciente'
       if (tipo === 'profissional') return navigate('/profissional/dashboard')
       if (tipo === 'clinica') return navigate('/clinica/dashboard')
       if (tipo === 'admin') return navigate('/admin/clinicas')
-      navigate('/paciente/dashboard')
+      navigate('/paciente/pre-triagem')
     } catch (err) {
-      setErro(err.response?.data?.message || 'CPF ou senha incorretos.')
+      setErro(
+        err.response?.data?.mensagem ||
+        err.response?.data?.message ||
+        'E-mail/CPF ou senha incorretos.'
+      )
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <Input
-        label="CPF"
-        name="cpf"
+        label="E-mail ou CPF"
+        name="loginId"
         type="text"
-        placeholder="000.000.000-00"
-        value={form.cpf}
+        placeholder="email@exemplo.com ou 000.000.000-00"
+        value={form.loginId}
         onChange={handleChange}
-        maxLength={14}
         required
       />
       <Input
@@ -58,7 +57,9 @@ export default function LoginPage() {
       />
 
       {erro && (
-        <p className="text-sm text-red-500 bg-red-50 px-4 py-2 rounded-xl">{erro}</p>
+        <p className="text-xs text-red-600 bg-red-50 border border-red-200 px-4 py-2.5 rounded-xl animate-[fadeIn_0.2s_ease]">
+          {erro}
+        </p>
       )}
 
       <Button type="submit" loading={carregando} className="w-full mt-1">
@@ -67,7 +68,7 @@ export default function LoginPage() {
 
       <button
         type="button"
-        className="text-sm text-blue-600 hover:underline text-center"
+        className="text-xs text-blue-600 hover:underline text-center mt-1"
       >
         Esqueceu a senha?
       </button>
