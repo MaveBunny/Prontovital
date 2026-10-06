@@ -4,6 +4,7 @@ import Button from '../../../components/shared/Button'
 import Input from '../../../components/shared/Input'
 import Select from '../../../components/shared/Select'
 import { usePaciente } from '../../../shared/hooks/usePaciente'
+import { getPerfilDinamico } from '../../../lib/pacientesApi'
 
 const TIPOS_SANGUINEOS = [
   { value: 'A+', label: 'A+' }, { value: 'A-', label: 'A-' },
@@ -16,13 +17,17 @@ export default function EditarPerfilPage() {
   const navigate = useNavigate()
   const { paciente, carregando: carregandoPerfil, atualizar } = usePaciente()
 
+  // Carrega dados reais do usuário logado como estado inicial do formulário
+  const perfilInicial = getPerfilDinamico()
+
   const [form, setForm] = useState({
-    nome: paciente?.nome || '',
-    email: paciente?.email || '',
-    tipoSanguineo: paciente?.dadosSaude?.tipoSanguineo || '',
-    alergias: paciente?.dadosSaude?.alergias || '',
-    medicamentos: paciente?.dadosSaude?.medicamentos || '',
-    comorbidades: paciente?.dadosSaude?.comorbidades || '',
+    nome: paciente?.nome || perfilInicial?.nome || '',
+    email: paciente?.email || perfilInicial?.email || '',
+    // TODO: Integrar quando o backend suportar estes campos de saúde
+    tipoSanguineo: paciente?.dadosSaude?.tipoSanguineo || perfilInicial?.dadosSaude?.tipoSanguineo || '',
+    alergias: paciente?.dadosSaude?.alergias || perfilInicial?.dadosSaude?.alergias || '',
+    medicamentos: paciente?.dadosSaude?.medicamentos || perfilInicial?.dadosSaude?.medicamentos || '',
+    comorbidades: paciente?.dadosSaude?.comorbidades || perfilInicial?.dadosSaude?.comorbidades || '',
   })
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
