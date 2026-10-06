@@ -50,10 +50,11 @@ export default function MeusAgendamentosPage() {
     if (!itemCancelando) return
     setSalvandoCancelamento(true)
     try {
-      await cancelarConsulta(itemCancelando.id)
+      // Usa id_agendamento — campo real retornado pelo backend
+      await cancelarConsulta(itemCancelando.id_agendamento)
       setAgendamentos((prev) =>
         prev.map((a) =>
-          String(a.id) === String(itemCancelando.id)
+          String(a.id_agendamento) === String(itemCancelando.id_agendamento)
             ? { ...a, status: 'Cancelado' }
             : a
         )
