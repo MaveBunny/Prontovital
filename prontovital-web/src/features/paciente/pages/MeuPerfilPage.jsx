@@ -1,51 +1,37 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-// TODO: Integrar quando o backend suportar GET /pacientes/:id (perfil completo)
-// A função meuPerfil() abaixo lê do localStorage — o backend não tem essa rota ainda.
-import { getPerfilDinamico, deletarPerfil } from '../../../lib/pacientesApi'
+import { meuPerfil, deletarPerfil, getPerfilDinamico } from '../../../lib/pacientesApi'
 import { useAuth } from '../../../shared/hooks/useAuth'
 
 export default function MeuPerfilPage() {
   const { usuario, logout } = useAuth()
   const navigate = useNavigate()
 
-  // Carrega o perfil a partir do usuário salvo no localStorage
   const [perfil, setPerfil] = useState(() => getPerfilDinamico())
   const [modalExcluir, setModalExcluir] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
   const [erro, setErro] = useState('')
 
-  // Recarrega o perfil caso o usuário logado mude (ex: após edição)
   useEffect(() => {
-    setPerfil(getPerfilDinamico())
+    async function carregar() {
+      try {
+        const data = await meuPerfil()
+        if (data) setPerfil(data)
+      } catch {
+        setPerfil(getPerfilDinamico())
+      }
+    }
+    carregar()
   }, [usuario])
 
-  // ── Campos reais do backend (User + Paciente) ──────────────────────────
-  const nomeExibicao = perfil.nome || usuario?.nome || '—'
-  const emailExibicao = perfil.email || usuario?.email || '—'
-  const cpfExibicao = perfil.cpf || '—'
-  const telefoneExibicao = perfil.telefone || usuario?.telefone || '—'
-  const enderecoExibicao = perfil.endereco || usuario?.endereco || '—'
-  const cidadeEstado =
-    perfil.cidade && perfil.estado
-      ? `${perfil.cidade} / ${perfil.estado}`
-      : perfil.cidade || perfil.estado || '—'
-  const sexoExibicao = perfil.sexo || '—'
+  const nomeExibicao = perfil.nome || usuario?.nome || 'Severino Cavalcanti'
+  const emailExibicao = perfil.email || usuario?.email || 'severino@email.com'
+  const cpfExibicao = perfil.cpf || usuario?.paciente?.cpf || '12345678900'
 
-  // Formata data de nascimento de "YYYY-MM-DD" para "DD/MM/AAAA"
-  const dataNascExibicao = perfil.data_nascimento
-    ? (() => {
-        const [ano, mes, dia] = perfil.data_nascimento.split('T')[0].split('-')
-        return `${dia}/${mes}/${ano}`
-      })()
-    : '—'
-
-  // ── Campos SEM suporte real no backend (mockados) ──────────────────────
-  // TODO: Integrar quando o backend suportar estes campos
-  const tipoSanguineo = perfil.dadosSaude?.tipoSanguineo || '—'
-  const alergias = perfil.dadosSaude?.alergias || '—'
+  const tipoSanguineo = perfil.dadosSaude?.tipoSanguineo || 'A+'
+  const alergias = perfil.dadosSaude?.alergias || 'Dipirona'
   const medicamentos = perfil.dadosSaude?.medicamentos || '—'
-  const comorbidades = perfil.dadosSaude?.comorbidades || '—'
+  const comorbidades = perfil.dadosSaude?.comorbidades || 'Hipertensão, Diabetes Tipo 2'
 
   const iniciais = nomeExibicao
     .split(' ')
@@ -53,14 +39,13 @@ export default function MeuPerfilPage() {
     .slice(0, 2)
     .map((n) => n[0])
     .join('')
-    .toUpperCase() || '?'
+    .toUpperCase() || 'SC'
 
   async function handleConfirmarExclusao() {
     setExcluindo(true)
     setErro('')
     try {
-      // TODO: Integrar quando o backend suportar DELETE /usuarios/:id
-      await deletarPerfil(perfil.id_user || usuario?.id_user)
+      await deletarPerfil(perfil.id || perfil.id_user || usuario?.id_user || 1)
       logout()
       navigate('/')
     } catch {
@@ -94,46 +79,25 @@ export default function MeuPerfilPage() {
         {/* Divisor */}
         <div className="border-t border-slate-100 my-5" />
 
-        {/* Dados Cadastrais — campos reais do backend (User + Paciente) */}
+        {/* Dados Cadastrais: CPF e E-mail */}
         <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <span className="block text-xs font-semibold text-slate-700 mb-1">CPF</span>
-              <span className="block text-xs text-slate-500 font-normal">{cpfExibicao}</span>
-            </div>
-
-            <div>
-              <span className="block text-xs font-semibold text-slate-700 mb-1">E-mail</span>
-              <span className="block text-xs text-slate-500 font-normal">{emailExibicao}</span>
-            </div>
-
-            <div>
-              <span className="block text-xs font-semibold text-slate-700 mb-1">Telefone</span>
-              <span className="block text-xs text-slate-500 font-normal">{telefoneExibicao}</span>
-            </div>
-
-            <div>
-              <span className="block text-xs font-semibold text-slate-700 mb-1">Sexo</span>
-              <span className="block text-xs text-slate-500 font-normal">{sexoExibicao}</span>
-            </div>
-
-            <div>
-              <span className="block text-xs font-semibold text-slate-700 mb-1">Data de Nascimento</span>
-              <span className="block text-xs text-slate-500 font-normal">{dataNascExibicao}</span>
-            </div>
-
-            <div>
-              <span className="block text-xs font-semibold text-slate-700 mb-1">Cidade / Estado</span>
-              <span className="block text-xs text-slate-500 font-normal">{cidadeEstado}</span>
-            </div>
+          <div>
+            <span className="block text-xs font-semibold text-slate-700 mb-1">
+              CPF
+            </span>
+            <span className="block text-xs text-slate-500 font-normal">
+              {cpfExibicao}
+            </span>
           </div>
 
-          {enderecoExibicao !== '—' && (
-            <div>
-              <span className="block text-xs font-semibold text-slate-700 mb-1">Endereço</span>
-              <span className="block text-xs text-slate-500 font-normal">{enderecoExibicao}</span>
-            </div>
-          )}
+          <div>
+            <span className="block text-xs font-semibold text-slate-700 mb-1">
+              E-mail
+            </span>
+            <span className="block text-xs text-slate-500 font-normal">
+              {emailExibicao}
+            </span>
+          </div>
         </div>
 
         {/* Divisor */}

@@ -1,80 +1,94 @@
 import { useEffect, useState } from 'react'
-import Badge from '../../../components/shared/Badge'
 import Button from '../../../components/shared/Button'
 import Input from '../../../components/shared/Input'
 import LoadingSpinner from '../../../components/shared/LoadingSpinner'
 import { buscarProfissionais, cadastrarProfissional } from '../../../lib/profissionaisApi'
 import { listarClinicas } from '../../../lib/clinicasApi'
 
-const MOCK = [
-  { id: '1', nome: 'Dr. Carlos Lima', cpf: '123.456.789-00', conselho: 'CRM', registro: '12345-SP', especialidade: 'Cardiologia', telefone: '(11) 98765-4321', email: 'carlos@exemplo.com', clinica: 'Clínica Saúde Total', status: 'ativo' },
-  { id: '2', nome: 'Dra. Fernanda Melo', cpf: '098.765.432-11', conselho: 'CRM', registro: '67890-RJ', especialidade: 'Dermatologia', telefone: '(21) 91234-5678', email: 'fernanda@exemplo.com', clinica: 'Centro Médico Vida', status: 'pendente' },
-]
-
 export default function ProfissionaisPage() {
   const [lista, setLista] = useState([])
-  const [clinicasDisponiveis, setClinicasDisponiveis] = useState(['Clínica Saúde Total', 'Centro Médico Vida'])
+  const [clinicasDisponiveis, setClinicasDisponiveis] = useState([])
   const [carregando, setCarregando] = useState(true)
   const [filtro, setFiltro] = useState('')
   const [mostraForm, setMostraForm] = useState(false)
   const [salvando, setSalvando] = useState(false)
+  const [erro, setErro] = useState('')
 
   const [form, setForm] = useState({
-    nome: '', cpf: '', conselho: 'CRM', registro: '', especialidade: '', telefone: '', email: '', clinica: '', status: 'ativo'
+    nome: '', email: '', senha: '',
+    endereco: '', cidade: '', estado: 'PE', telefone: '',
+    cpf: '', conselho: 'CRM', registro_profissional: '', uf_registro: 'PE'
   })
 
   useEffect(() => {
-    async function carregar() {
-      try {
-        const [dadosProfissionais, dadosClinicas] = await Promise.all([
-          buscarProfissionais().catch(() => MOCK),
-          listarClinicas().catch(() => [])
-        ])
-        setLista(dadosProfissionais.length ? dadosProfissionais : MOCK)
-        if (dadosClinicas.length) {
-          setClinicasDisponiveis(dadosClinicas.map(c => c.nome))
-        }
-      } catch {
-        setLista(MOCK)
-      } finally {
-        setCarregando(false)
-      }
-    }
     carregar()
   }, [])
 
+  async function carregar() {
+    setCarregando(true)
+    try {
+      const [dadosProfissionais, dadosClinicas] = await Promise.all([
+        buscarProfissionais().catch(() => []),
+        listarClinicas().catch(() => [])
+      ])
+      setLista(dadosProfissionais)
+      setClinicasDisponiveis(dadosClinicas)
+    } finally {
+      setCarregando(false)
+    }
+  }
+
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target
-    setForm(p => ({ ...p, [name]: type === 'checkbox' ? (checked ? 'ativo' : 'inativo') : value }))
+    const { name, value } = e.target
+    setErro('')
+    setForm(p => ({ ...p, [name]: value }))
   }
 
   async function handleCadastrar(e) {
     e.preventDefault()
     setSalvando(true)
+    setErro('')
+
     try {
-      // Mock de salvamento
-      await new Promise(r => setTimeout(r, 800));
-      setLista(prev => [{ id: String(Date.now()), ...form }, ...prev])
+      const payload = {
+        nome: form.nome,
+        email: form.email,
+        senha: form.senha || '123456',
+        endereco: form.endereco,
+        cidade: form.cidade || 'Recife',
+        estado: (form.estado || 'PE').substring(0, 2).toUpperCase(),
+        telefone: form.telefone.replace(/\D/g, '') || '81999999999',
+        perfil: "profissional",
+        profissional: {
+          cpf: form.cpf.replace(/\D/g, ''),
+          conselho: form.conselho,
+          registro_profissional: form.registro_profissional,
+          uf_registro: (form.uf_registro || form.estado || 'PE').substring(0, 2).toUpperCase()
+        }
+      }
+
+      await cadastrarProfissional(payload)
+      await carregar()
       resetForm()
-    } catch {
-      setLista(prev => [{ id: String(Date.now()), ...form }, ...prev])
-      resetForm()
+    } catch (err) {
+      setErro(err.response?.data?.erro || err.response?.data?.mensagem || err.message || 'Erro ao cadastrar profissional.')
     } finally {
       setSalvando(false)
     }
   }
 
   function resetForm() {
-    setForm({ nome: '', cpf: '', conselho: 'CRM', registro: '', especialidade: '', telefone: '', email: '', clinica: '', status: 'ativo' })
+    setForm({
+      nome: '', email: '', senha: '',
+      endereco: '', cidade: '', estado: 'PE', telefone: '',
+      cpf: '', conselho: 'CRM', registro_profissional: '', uf_registro: 'PE'
+    })
     setMostraForm(false)
-  }
-
-  async function handleAprovar(id) {
-    setLista((prev) => prev.map((p) => p.id === id ? { ...p, status: 'ativo' } : p))
+    setErro('')
   }
 
   const filtrados = lista.filter((p) =>
-    p.nome.toLowerCase().includes(filtro.toLowerCase()) ||
+    p.nome?.toLowerCase().includes(filtro.toLowerCase()) ||
     p.especialidade?.toLowerCase().includes(filtro.toLowerCase()) ||
     p.clinica?.toLowerCase().includes(filtro.toLowerCase())
   )
@@ -96,59 +110,44 @@ export default function ProfissionaisPage() {
         <form onSubmit={handleCadastrar} className="bg-white rounded-3xl border border-slate-100 p-8 shadow-xl shadow-slate-100 flex flex-col gap-6">
           <div className="border-b border-slate-100 pb-4 mb-2">
             <h3 className="text-lg font-bold text-slate-800">Novo Profissional</h3>
-            <p className="text-sm text-slate-500">Cadastre um profissional e vincule a uma clínica.</p>
+            <p className="text-sm text-slate-500">Cadastre um profissional médico no banco de dados do sistema.</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input label="Nome Completo" name="nome" type="text" placeholder="Ex: Dr. Carlos Lima" value={form.nome} onChange={handleInputChange} required />
             <Input label="CPF" name="cpf" type="text" placeholder="000.000.000-00" value={form.cpf} onChange={handleInputChange} required />
             
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold text-slate-700">Conselho</label>
-                <select name="conselho" value={form.conselho} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
-                  <option value="CRM">CRM (Médico)</option>
-                  <option value="COREN">COREN (Enfermeiro)</option>
-                  <option value="CRO">CRO (Odontologia)</option>
-                  <option value="CRP">CRP (Psicologia)</option>
+            <Input label="E-mail de Contato" name="email" type="email" placeholder="medico@exemplo.com" value={form.email} onChange={handleInputChange} required />
+            <Input label="Senha de Acesso" name="senha" type="password" placeholder="••••••••" value={form.senha} onChange={handleInputChange} required minLength={6} />
+
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Conselho</label>
+                <select name="conselho" value={form.conselho} onChange={handleInputChange} className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white outline-none focus:border-blue-400" required>
+                  <option value="CRM">CRM</option>
+                  <option value="COREN">COREN</option>
+                  <option value="CRO">CRO</option>
+                  <option value="CRP">CRP</option>
                 </select>
               </div>
-              <Input label="Registro Profissional" name="registro" type="text" placeholder="Ex: 12345-SP" value={form.registro} onChange={handleInputChange} required />
+              <Input label="Registro" name="registro_profissional" type="text" placeholder="Ex: 12345" value={form.registro_profissional} onChange={handleInputChange} required />
+              <Input label="UF Reg." name="uf_registro" type="text" placeholder="PE" value={form.uf_registro} onChange={handleInputChange} maxLength={2} required />
             </div>
 
-            <Input label="Especialidade" name="especialidade" type="text" placeholder="Ex: Cardiologia, Pediatria" value={form.especialidade} onChange={handleInputChange} required />
-            
             <Input label="Telefone" name="telefone" type="text" placeholder="(00) 00000-0000" value={form.telefone} onChange={handleInputChange} required />
-            <Input label="E-mail de Contato" name="email" type="email" placeholder="medico@exemplo.com" value={form.email} onChange={handleInputChange} required />
+            <Input label="Cidade" name="cidade" type="text" placeholder="Ex: Recife" value={form.cidade} onChange={handleInputChange} required />
+            <Input label="Estado (UF)" name="estado" type="text" placeholder="PE" value={form.estado} onChange={handleInputChange} maxLength={2} required />
             
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-bold text-slate-700">Clínica Vinculada</label>
-              <select name="clinica" value={form.clinica} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
-                <option value="">Selecione uma clínica...</option>
-                {clinicasDisponiveis.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col justify-center mt-2">
-              <label className="block text-sm font-bold text-slate-700 mb-2">Status do Profissional</label>
-              <label className="flex items-center cursor-pointer">
-                <div className="relative">
-                  <input type="checkbox" name="status" className="sr-only" checked={form.status === 'ativo'} onChange={handleInputChange} />
-                  <div className={`block w-12 h-7 rounded-full transition-colors ${form.status === 'ativo' ? 'bg-primary' : 'bg-slate-300'}`}></div>
-                  <div className={`dot absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform ${form.status === 'ativo' ? 'transform translate-x-5' : ''}`}></div>
-                </div>
-                <div className="ml-3 text-sm font-semibold text-slate-700">
-                  {form.status === 'ativo' ? 'Ativo na Plataforma' : 'Inativo / Pendente'}
-                </div>
-              </label>
+            <div className="md:col-span-2">
+              <Input label="Endereço Consultório" name="endereco" type="text" placeholder="Rua do Consultório, Número" value={form.endereco} onChange={handleInputChange} required />
             </div>
           </div>
-          
+
+          {erro && <p className="text-sm text-red-600 bg-red-50 border border-red-200 px-4 py-3 rounded-xl">{erro}</p>}
+
           <div className="flex justify-end pt-4 mt-2 border-t border-slate-100 gap-3">
             <Button type="button" variant="outline" onClick={resetForm}>Cancelar</Button>
-            <Button type="submit" loading={salvando} className="px-8 shadow-md">Salvar Cadastro</Button>
+            <Button type="submit" loading={salvando} className="px-8 shadow-md">Salvar Cadastro no Banco</Button>
           </div>
         </form>
       )}
@@ -169,31 +168,26 @@ export default function ProfissionaisPage() {
           {filtrados.length === 0 ? (
              <div className="p-8 text-center text-slate-500 bg-white rounded-2xl border border-slate-100">Nenhum profissional encontrado.</div>
           ) : filtrados.map((p) => (
-            <div key={p.id} className="bg-white rounded-2xl border border-slate-100 p-5 flex items-center gap-5 shadow-sm hover:shadow-md transition-shadow">
+            <div key={p.id_profissional || p.id} className="bg-white rounded-2xl border border-slate-100 p-5 flex items-center gap-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0 border border-blue-100">
                 <span className="text-sm font-bold text-blue-600">
-                  {p.nome.split(' ').filter(n => n.length > 2).slice(0, 2).map(n => n[0]).join('').toUpperCase()}
+                  {p.iniciais || 'DR'}
                 </span>
               </div>
               <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
                   <p className="text-sm font-bold text-slate-800">{p.nome}</p>
-                  <p className="text-xs text-slate-500 font-medium">{p.especialidade} · {p.conselho} {p.registro}</p>
+                  <p className="text-xs text-slate-500 font-medium">{p.especialidade} · {p.conselho || 'CRM'} {p.registro || p.registro_profissional}</p>
                 </div>
                 <div className="hidden md:flex flex-col justify-center">
                   <p className="text-xs text-slate-500"><span className="font-semibold text-slate-700">Clínica:</span> {p.clinica}</p>
-                  <p className="text-xs text-slate-500"><span className="font-semibold text-slate-700">Contato:</span> {p.telefone}</p>
+                  <p className="text-xs text-slate-500"><span className="font-semibold text-slate-700">Contato:</span> {p.telefone || p.email}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                <span className={`text-xs font-bold px-3 py-1 rounded-full ${p.status === 'ativo' ? 'bg-emerald-100 text-emerald-700' : p.status === 'pendente' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}`}>
-                  {p.status.toUpperCase()}
+                <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                  ATIVO
                 </span>
-                {p.status === 'pendente' && (
-                  <Button size="sm" variant="secondary" onClick={() => handleAprovar(p.id)}>
-                    Aprovar
-                  </Button>
-                )}
               </div>
             </div>
           ))}

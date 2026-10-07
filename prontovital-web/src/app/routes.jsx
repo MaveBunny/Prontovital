@@ -1,9 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import RegisterPage from '../features/auth/pages/RegisterPage'
-import AdminRoutes from '../features/admin/routes'
-import ClinicaRoutes from '../features/clinica/routes'
 import PacienteRoutes from '../features/paciente/routes'
-import ProfissionalRoutes from '../features/profissional/routes'
 import { useAuth } from '../shared/hooks/useAuth'
 
 /**
@@ -30,37 +27,7 @@ export default function AppRoutes() {
         }
       />
 
-      {/* ── Profissional ── */}
-      <Route
-        path="/profissional/*"
-        element={
-          <RotaProtegida>
-            <ProfissionalRoutes />
-          </RotaProtegida>
-        }
-      />
-
-      {/* ── Clínica ── */}
-      <Route
-        path="/clinica/*"
-        element={
-          <RotaProtegida>
-            <ClinicaRoutes />
-          </RotaProtegida>
-        }
-      />
-
-      {/* ── Admin ── */}
-      <Route
-        path="/admin/*"
-        element={
-          <RotaProtegida>
-            <AdminRoutes />
-          </RotaProtegida>
-        }
-      />
-
-      {/* ── Redirecionamento da Triagem para a Pré-Triagem do Paciente ── */}
+      {/* ── Redirecionamento da Triagem direta para a Pré-Triagem do Paciente ── */}
       <Route path="/triagem/*" element={<Navigate to="/paciente/pre-triagem" replace />} />
 
       {/* ── Fallback ── */}

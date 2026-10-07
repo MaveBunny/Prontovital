@@ -1,11 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { agendarConsulta } from '../../../lib/agendamentosApi'
-import { MOCK_PROFISSIONAIS } from '../../../lib/profissionaisApi'
-
-const HORARIOS_PADRAO = [
-  '08:00', '09:00', '09:30', '10:30', '11:15',
-  '14:00', '14:45', '15:30', '16:15', '17:00'
-]
+import { MOCK_PROFISSIONAIS, consultarDisponibilidadeProfissional } from '../../../lib/profissionaisApi'
 
 export default function ModalAgendarConsulta({
   aberto,
@@ -16,25 +11,46 @@ export default function ModalAgendarConsulta({
   onSucesso = null,
 }) {
   const [medicoId, setMedicoId] = useState(
-    medicoPreSelecionado?.id || (MOCK_PROFISSIONAIS[0]?.id ?? 1)
+    medicoPreSelecionado?.id_profissional || medicoPreSelecionado?.id || (MOCK_PROFISSIONAIS[0]?.id ?? 1)
   )
   const [dataConsulta, setDataConsulta] = useState(() => {
     const amanha = new Date()
     amanha.setDate(amanha.getDate() + 1)
     return amanha.toISOString().split('T')[0]
   })
+  const [horariosDisponiveis, setHorariosDisponiveis] = useState([
+    '08:00', '09:00', '09:30', '10:30', '11:15',
+    '14:00', '14:45', '15:30', '16:15', '17:00'
+  ])
   const [horarioSelecionado, setHorarioSelecionado] = useState('09:30')
   const [resumoTriagem, setResumoTriagem] = useState(resumoTriagemInicial)
   const [salvando, setSalvando] = useState(false)
   const [sucesso, setSucesso] = useState(false)
   const [erro, setErro] = useState('')
 
-  if (!aberto) return null
-
   const medico =
     medicoPreSelecionado ||
-    MOCK_PROFISSIONAIS.find((p) => String(p.id) === String(medicoId)) ||
+    MOCK_PROFISSIONAIS.find((p) => String(p.id) === String(medicoId) || String(p.id_profissional) === String(medicoId)) ||
     MOCK_PROFISSIONAIS[0]
+
+  useEffect(() => {
+    async function carregarHorarios() {
+      if (!medico || !dataConsulta) return
+      const idProf = medico.id_profissional || medico.id || 1
+      const slots = await consultarDisponibilidadeProfissional(idProf, dataConsulta)
+      if (slots && slots.length > 0) {
+        setHorariosDisponiveis(slots)
+        if (!slots.includes(horarioSelecionado)) {
+          setHorarioSelecionado(slots[0])
+        }
+      }
+    }
+    if (aberto) {
+      carregarHorarios()
+    }
+  }, [aberto, medico, dataConsulta])
+
+  if (!aberto) return null
 
   async function handleConfirmar(e) {
     e.preventDefault()
@@ -42,14 +58,14 @@ export default function ModalAgendarConsulta({
     setErro('')
 
     try {
-      const dataHoraIso = `${dataConsulta}T${horarioSelecionado}:00`
       await agendarConsulta({
-        id_profissional: medico?.id_profissional || medico?.id,
+        id_profissional: medico?.id_profissional || medico?.id || 1,
         id_clinica: medico?.id_clinica || 1,
         medicoNome: medico?.nome || 'Dr. Médico ProntoVital',
         especialidade: medico?.especialidade || especialidadePreSelecionada || 'Clínica Geral',
         clinicaNome: medico?.clinica || 'Clínica Saúde Total',
-        dataHora: dataHoraIso,
+        data_agendamento: dataConsulta,
+        horario_agendamento: horarioSelecionado,
         resumoTriagem:
           resumoTriagem ||
           resumoTriagemInicial ||
@@ -62,8 +78,8 @@ export default function ModalAgendarConsulta({
         if (onSucesso) onSucesso()
         onFechar()
       }, 1200)
-    } catch {
-      setErro('Não foi possível realizar o agendamento. Tente novamente.')
+    } catch (err) {
+      setErro(err.message || 'Não foi possível realizar o agendamento. Tente novamente.')
     } finally {
       setSalvando(false)
     }
@@ -155,7 +171,7 @@ export default function ModalAgendarConsulta({
                   onChange={(e) => setHorarioSelecionado(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 >
-                  {HORARIOS_PADRAO.map((h) => (
+                  {horariosDisponiveis.map((h) => (
                     <option key={h} value={h}>
                       {h}
                     </option>

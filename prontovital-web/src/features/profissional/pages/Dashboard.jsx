@@ -1,10 +1,33 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../shared/hooks/useAuth'
+import { meusAgendamentos } from '../../../lib/agendamentosApi'
 
 export default function ProfissionalDashboard() {
   const { usuario, logout } = useAuth()
   const navigate = useNavigate()
+  const [agendamentos, setAgendamentos] = useState([])
+  const [carregando, setCarregando] = useState(true)
+
   const nome = usuario?.nome?.split(' ')[0] || 'Profissional'
+
+  useEffect(() => {
+    async function carregar() {
+      setCarregando(true)
+      try {
+        const data = await meusAgendamentos()
+        setAgendamentos(data)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setCarregando(false)
+      }
+    }
+    carregar()
+  }, [])
+
+  const total = agendamentos.length
+  const confirmados = agendamentos.filter(a => a.status?.toLowerCase() === 'confirmado' || a.status?.toLowerCase() === 'agendado').length
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -30,10 +53,8 @@ export default function ProfissionalDashboard() {
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
           {[
-            { label: 'Consultas hoje', valor: '0', cor: 'bg-blue-50 text-blue-700' },
-            { label: 'Pendentes', valor: '0', cor: 'bg-yellow-50 text-yellow-700' },
-            { label: 'Esta semana', valor: '0', cor: 'bg-green-50 text-green-700' },
-            { label: 'Total pacientes', valor: '0', cor: 'bg-purple-50 text-purple-700' },
+            { label: 'Consultas no Banco', valor: String(total), cor: 'bg-blue-50 text-blue-700' },
+            { label: 'Confirmados', valor: String(confirmados), cor: 'bg-green-50 text-green-700' },
           ].map((s) => (
             <div key={s.label} className={`${s.cor} rounded-2xl p-4`}>
               <p className="text-2xl font-bold">{s.valor}</p>
@@ -46,8 +67,8 @@ export default function ProfissionalDashboard() {
         <div className="bg-white rounded-2xl border border-slate-100 p-5 flex flex-col gap-3">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Ações rápidas</h3>
           {[
-            { label: 'Minha Agenda', desc: 'Ver horários e disponibilidade', rota: '/profissional/agenda' },
-            { label: 'Consultas do dia', desc: 'Lista de pacientes agendados', rota: '/profissional/agenda' },
+            { label: 'Minha Agenda', desc: 'Ver horários e disponibilidade', rota: '/paciente/profissionais' },
+            { label: 'Consultas do dia', desc: 'Lista de agendamentos no banco', rota: '/paciente/agendamentos' },
           ].map((a) => (
             <button
               key={a.label}

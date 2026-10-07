@@ -39,14 +39,15 @@ export const MOCK_CLINICAS = [
   },
 ]
 
-/** GET /clinicas ou /api/clinicas — Listar Clínicas */
-export async function listarClinicas(params = {}) {
+/** GET /clinicas — Listar Clínicas */
+export async function listarClinicas(busca = '') {
   try {
-    const { data } = await api.get('/clinicas', { params }).catch(() => api.get('/api/clinicas', { params }))
+    const queryParams = typeof busca === 'string' ? (busca ? { busca } : {}) : busca
+    const { data } = await api.get('/clinicas', { params: queryParams })
     if (Array.isArray(data) && data.length > 0) {
       return data.map((c, index) => ({
-        id: c.id_clinica || c.id || index + 1,
-        id_clinica: c.id_clinica || c.id || index + 1,
+        id: c.id_clinica || index + 1,
+        id_clinica: c.id_clinica || index + 1,
         nome: c.User?.nome || c.nome || 'Clínica ProntoVital',
         bairro: c.bairro || 'Centro',
         endereco: c.User?.endereco || c.endereco || 'Endereço não informado',
