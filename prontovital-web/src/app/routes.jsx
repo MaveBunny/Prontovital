@@ -4,7 +4,6 @@ import AdminRoutes from '../features/admin/routes'
 import ClinicaRoutes from '../features/clinica/routes'
 import PacienteRoutes from '../features/paciente/routes'
 import ProfissionalRoutes from '../features/profissional/routes'
-import TriagemRoutes from '../features/triagem/routes'
 import { useAuth } from '../shared/hooks/useAuth'
 
 /**
@@ -61,15 +60,8 @@ export default function AppRoutes() {
         }
       />
 
-      {/* ── Triagem (paciente autenticado) ── */}
-      <Route
-        path="/triagem/*"
-        element={
-          <RotaProtegida>
-            <TriagemRoutes />
-          </RotaProtegida>
-        }
-      />
+      {/* ── Redirecionamento da Triagem para a Pré-Triagem do Paciente ── */}
+      <Route path="/triagem/*" element={<Navigate to="/paciente/pre-triagem" replace />} />
 
       {/* ── Fallback ── */}
       <Route path="*" element={<Navigate to="/" replace />} />
