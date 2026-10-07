@@ -397,9 +397,9 @@ export default function AgendaPage() {
                         key={consulta.id}
                         type="button"
                         onClick={() =>
-                          navigate(
-                            `/profissional/consulta/${consulta.id}`,
-                          )
+                          navigate(`/profissional/consulta/${consulta.id}`, {
+                            state: { origem: 'semana' },
+                          })
                         }
                         className="w-full text-left rounded-lg bg-blue-50 border border-blue-100 p-2 hover:bg-blue-100 hover:border-blue-200 transition-colors"
                       >
@@ -517,9 +517,9 @@ export default function AgendaPage() {
                     key={consulta.id}
                     type="button"
                     onClick={() =>
-                      navigate(
-                        `/profissional/consulta/${consulta.id}`,
-                      )
+                      navigate(`/profissional/consulta/${consulta.id}`, {
+                        state: { origem: 'mes' },
+                      })
                     }
                     className="w-full px-4 py-4 text-left hover:bg-slate-50 transition-colors"
                   >
