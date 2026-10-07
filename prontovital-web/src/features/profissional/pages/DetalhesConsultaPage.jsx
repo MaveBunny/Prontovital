@@ -47,6 +47,7 @@ export default function DetalhesConsultaPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
+  const origem = location.state?.origem
 
   const [consulta, setConsulta] = useState(null)
   const [carregando, setCarregando] = useState(true)
@@ -69,6 +70,11 @@ export default function DetalhesConsultaPage() {
 
   function voltar() {
     const origem = location.state?.origem
+
+    if (origem === 'agendamentos') {
+    navigate('/profissional/agendamentos')
+    return
+    }
 
     if (origem === 'mes') {
       navigate('/profissional/agenda?visao=mes')
@@ -105,7 +111,9 @@ export default function DetalhesConsultaPage() {
             onClick={voltar}
             className="mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700"
           >
-            Voltar ao calendário
+            {origem === 'agendamentos'
+            ? 'Voltar aos agendamentos'
+            : 'Voltar ao calendário'}
           </button>
         </div>
       </div>
@@ -133,7 +141,9 @@ export default function DetalhesConsultaPage() {
           />
         </svg>
 
-        Voltar ao calendário
+        {origem === 'agendamentos'
+        ? 'Voltar aos agendamentos'
+        : 'Voltar ao calendário'}
       </button>
 
       <div>
