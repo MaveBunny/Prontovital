@@ -1,9 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import LoadingSpinner from '../../../components/shared/LoadingSpinner'
-import { listarDisponibilidade } from '../../../lib/agendaApi'
-import { meusAgendamentos } from '../../../lib/agendamentosApi'
+import { listarAgendamentosProfissional, toDataHora } from '../../../lib/profissionalAgendaApi'
 import { formatarDataHora } from '../../../shared/utils/formatDate'
+
+/** Adapta o item do mock centralizado para o shape consumido por esta página. */
+function normalizar(ag) {
+  return {
+    id: String(ag.id_agendamento),
+    paciente: { nome: ag.Paciente.User.nome },
+    especialidade: ag.Especialidade.nome,
+    dataHora: toDataHora(ag),
+    status: ag.status,
+  }
+}
 
 const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
@@ -22,18 +32,15 @@ export default function AgendaPage() {
   useEffect(() => {
     async function carregar() {
       try {
-        const data = await meusAgendamentos()
-        setAgendamentos(data)
+        const data = await listarAgendamentosProfissional()
+        setAgendamentos(data.map(normalizar))
       } catch {
-        // Mock para visualização sem backend
-        setAgendamentos([
-          { id: '1', paciente: { nome: 'João Pereira' }, dataHora: new Date().toISOString(), status: 'agendado', especialidade: 'Clínica Geral' },
-          { id: '2', paciente: { nome: 'Ana Costa' }, dataHora: new Date(Date.now() + 3600000).toISOString(), status: 'confirmado', especialidade: 'Dermatologia' },
-        ])
+        setAgendamentos([])
       } finally {
         setCarregando(false)
       }
     }
+
     carregar()
   }, [])
 
@@ -53,10 +60,28 @@ export default function AgendaPage() {
             const d = new Date()
             d.setDate(d.getDate() - d.getDay() + i)
             const isHoje = d.toDateString() === new Date().toDateString()
+
             return (
-              <button key={i} className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors ${isHoje ? 'bg-blue-600' : 'hover:bg-slate-50'}`}>
-                <span className={`text-[10px] font-medium ${isHoje ? 'text-blue-200' : 'text-slate-400'}`}>{DIAS[i]}</span>
-                <span className={`text-sm font-bold ${isHoje ? 'text-white' : 'text-slate-700'}`}>{d.getDate()}</span>
+              <button
+                key={i}
+                className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors ${
+                  isHoje ? 'bg-blue-600' : 'hover:bg-slate-50'
+                }`}
+              >
+                <span
+                  className={`text-[10px] font-medium ${
+                    isHoje ? 'text-blue-200' : 'text-slate-400'
+                  }`}
+                >
+                  {DIAS[i]}
+                </span>
+                <span
+                  className={`text-sm font-bold ${
+                    isHoje ? 'text-white' : 'text-slate-700'
+                  }`}
+                >
+                  {d.getDate()}
+                </span>
               </button>
             )
           })}
@@ -66,11 +91,14 @@ export default function AgendaPage() {
       {/* Lista de consultas */}
       <div className="flex flex-col gap-3">
         <h2 className="text-sm font-bold text-slate-600">Consultas do dia</h2>
+
         {carregando ? (
           <LoadingSpinner size="md" className="py-8" />
         ) : agendamentos.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-100 p-6 text-center">
-            <p className="text-sm text-slate-400">Nenhuma consulta agendada para hoje.</p>
+            <p className="text-sm text-slate-400">
+              Nenhuma consulta agendada para hoje.
+            </p>
           </div>
         ) : (
           agendamentos.map((ag) => (
@@ -81,14 +109,29 @@ export default function AgendaPage() {
             >
               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
                 <span className="text-sm font-bold text-blue-600">
-                  {ag.paciente.nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
+                  {ag.paciente.nome
+                    .split(' ')
+                    .slice(0, 2)
+                    .map((n) => n[0])
+                    .join('')
+                    .toUpperCase()}
                 </span>
               </div>
+
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-800 truncate">{ag.paciente.nome}</p>
-                <p className="text-xs text-slate-400">{ag.especialidade} · {formatarDataHora(ag.dataHora)}</p>
+                <p className="text-sm font-semibold text-slate-800 truncate">
+                  {ag.paciente.nome}
+                </p>
+                <p className="text-xs text-slate-400">
+                  {ag.especialidade} · {formatarDataHora(ag.dataHora)}
+                </p>
               </div>
-              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_COLOR[ag.status] || STATUS_COLOR.agendado}`}>
+
+              <span
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${
+                  STATUS_COLOR[ag.status] || STATUS_COLOR.agendado
+                }`}
+              >
                 {ag.status}
               </span>
             </button>
