@@ -58,12 +58,15 @@ export default function AgendaPage() {
   const [visao, setVisao] = useState('mes') // 'semana' ou 'mes'
 
   // O início da semana visível na tela
-  const [weekStart, setWeekStart] = useState(() => getMonday(new Date(2026, 8, 21)))
+  const [weekStart, setWeekStart] = useState(() => getMonday(new Date()))
   // O mês visível na tela
-  const [monthDate, setMonthDate] = useState(() => new Date(2026, 8, 1))
+  const [monthDate, setMonthDate] = useState(() => {
+    const hoje = new Date()
+    return new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+  })
 
   // O dia selecionado (ativo)
-  const [selectedDate, setSelectedDate] = useState(() => new Date(2026, 8, 27))
+  const [selectedDate, setSelectedDate] = useState(() => new Date())
   
   function goPrev() {
     if (visao === 'semana') {
@@ -199,8 +202,8 @@ export default function AgendaPage() {
               <div key={rowIndex} className="grid grid-cols-7 flex-1 border-b border-slate-100 last:border-b-0 min-h-[100px]">
                 {week.map((dayDate, colIndex) => {
                   const active = isSameDay(dayDate, selectedDate)
-                  // Mocks para ilustrar os horários do dia 15
-                  const isMockDay = dayDate && dayDate.getDate() === 15 && dayDate.getMonth() === 8 && dayDate.getFullYear() === 2026
+                  // Mocks para ilustrar os horários do dia atual
+                  const isMockDay = dayDate && isSameDay(dayDate, new Date())
 
                   return (
                     <button
