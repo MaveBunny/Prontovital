@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../shared/hooks/useAuth'
 
@@ -61,23 +62,53 @@ const navItems = [
 export default function ClinicaLayout() {
   const { usuario, logout } = useAuth()
   const navigate = useNavigate()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  const toggleMenu = () => setMobileMenuOpen(!mobileMenuOpen)
+  const closeMenu = () => setMobileMenuOpen(false)
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row font-sans">
       
-      {/* ── Sidebar Desktop ── */}
-      <aside className="w-[280px] bg-white border-r border-slate-200 flex flex-col justify-between hidden md:flex shrink-0">
+      {/* ── Mobile Header ── */}
+      <header className="md:hidden bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-40">
+        <h1 className="text-xl font-bold tracking-tight text-slate-800">
+          Pronto<span className="text-blue-600">Vital</span>
+        </h1>
+        <button onClick={toggleMenu} className="p-2 -mr-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            {mobileMenuOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M3 6h18M3 18h18" />
+            )}
+          </svg>
+        </button>
+      </header>
+
+      {/* ── Mobile Overlay ── */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 z-40 md:hidden backdrop-blur-sm"
+          onClick={closeMenu}
+        />
+      )}
+
+      {/* ── Sidebar Desktop / Mobile Drawer ── */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-[280px] bg-white border-r border-slate-200 flex flex-col justify-between transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
+        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
         
         <div>
-          {/* Logo */}
-          <div className="px-8 pt-8 pb-6 border-b border-slate-100">
+          {/* Logo (Desktop Only) */}
+          <div className="hidden md:block px-8 pt-8 pb-6 border-b border-slate-100">
             <h1 className="text-[22px] font-bold tracking-tight text-slate-800">
               Pronto<span className="text-blue-600">Vital</span>
             </h1>
           </div>
 
           {/* User Badge */}
-          <div className="px-6 py-6 border-b border-slate-100">
+          <div className="px-6 py-6 border-b border-slate-100 bg-slate-50 md:bg-transparent">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center shrink-0">
                 <span className="text-sm font-bold text-teal-600 tracking-wider">
@@ -85,18 +116,19 @@ export default function ClinicaLayout() {
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold text-slate-800 truncate">{usuario?.nome || 'Clínica'}</p>
+                <p className="text-[13px] font-bold text-slate-800 truncate">{usuario?.nome || 'Clínica Saúde'}</p>
                 <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">{usuario?.email || 'email@clinica.com'}</p>
               </div>
             </div>
           </div>
 
           {/* Navigation Links */}
-          <nav className="p-4 flex flex-col gap-1.5">
+          <nav className="p-4 flex flex-col gap-1.5 overflow-y-auto">
             {navItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
+                onClick={closeMenu}
                 className={({ isActive }) =>
                   `flex items-center gap-3.5 px-4 py-3 rounded-lg text-sm font-semibold transition-all ${
                     isActive
@@ -127,7 +159,7 @@ export default function ClinicaLayout() {
       </aside>
 
       {/* ── Main Content Area ── */}
-      <main className="flex-1 w-full max-w-[1200px] mx-auto overflow-y-auto">
+      <main className="flex-1 w-full max-w-[1200px] mx-auto overflow-y-auto overflow-x-hidden md:p-0">
         <Outlet />
       </main>
 
