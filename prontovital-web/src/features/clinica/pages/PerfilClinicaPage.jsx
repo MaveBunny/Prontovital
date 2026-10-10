@@ -1,15 +1,22 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../../shared/hooks/useAuth'
 
 export default function PerfilClinicaPage() {
   const { usuario } = useAuth()
+  const [perfil, setPerfil] = useState(null)
 
-  // Fallbacks mockados baseados no Figma para o caso de a API estar offline ou dados incompletos
-  const nome = usuario?.nome || 'Clínica Saúde Ilha do Leite'
-  const cnpj = usuario?.cnpj || '12.345.678/0001-99'
-  const endereco = usuario?.clinica?.endereco || 'Av. Agamenon Magalhães, 4002'
-  const bairro = usuario?.clinica?.bairro || 'Ilha do Leite'
-  const telefone = usuario?.clinica?.telefone || '(81) 3333-1111'
+  useEffect(() => {
+    if (usuario) {
+      setPerfil(usuario)
+    }
+  }, [usuario])
+
+  const nome = perfil?.nome || 'Clínica ProntoVital'
+  const cnpj = perfil?.cnpj || perfil?.clinica?.cnpj || '—'
+  const endereco = perfil?.endereco || perfil?.clinica?.endereco || 'Endereço não cadastrado'
+  const bairro = perfil?.bairro || perfil?.clinica?.bairro || perfil?.cidade || 'Centro'
+  const telefone = perfil?.telefone || perfil?.clinica?.telefone || '(81) 3333-0000'
+  const email = perfil?.email || 'contato@clinica.com'
 
   return (
     <div className="p-8 lg:p-12 w-full animate-[fadeIn_0.3s_ease-out] relative min-h-screen">
@@ -17,7 +24,7 @@ export default function PerfilClinicaPage() {
       {/* ── Header ── */}
       <div className="mb-10">
         <h2 className="text-[28px] font-bold text-slate-900 tracking-tight">Perfil da Clínica</h2>
-        <p className="text-[15px] text-slate-500 mt-1">Informações cadastrais da clínica.</p>
+        <p className="text-[15px] text-slate-500 mt-1">Informações cadastrais da clínica no sistema.</p>
       </div>
 
       {/* ── Card de Perfil ── */}
@@ -42,7 +49,6 @@ export default function PerfilClinicaPage() {
         {/* Informações */}
         <div className="p-8 flex flex-col gap-6">
           
-          {/* Item: Endereço */}
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center shrink-0 mt-0.5">
               <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -56,7 +62,6 @@ export default function PerfilClinicaPage() {
             </div>
           </div>
 
-          {/* Item: Bairro */}
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center shrink-0 mt-0.5">
               <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -65,12 +70,11 @@ export default function PerfilClinicaPage() {
               </svg>
             </div>
             <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Bairro</p>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Bairro / Cidade</p>
               <p className="text-[15px] font-bold text-slate-800 mt-0.5">{bairro}</p>
             </div>
           </div>
 
-          {/* Item: Telefone */}
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center shrink-0 mt-0.5">
               <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -78,20 +82,13 @@ export default function PerfilClinicaPage() {
               </svg>
             </div>
             <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Telefone</p>
-              <p className="text-[15px] font-bold text-slate-800 mt-0.5">{telefone}</p>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Telefone e E-mail</p>
+              <p className="text-[15px] font-bold text-slate-800 mt-0.5">{telefone} — {email}</p>
             </div>
           </div>
 
         </div>
       </div>
-
-      {/* Botão flutuante de ajuda */}
-      <button className="fixed bottom-6 right-6 w-12 h-12 bg-slate-800 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-slate-900 transition-colors">
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-        </svg>
-      </button>
 
     </div>
   )

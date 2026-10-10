@@ -4,7 +4,7 @@ import { meusAgendamentos, cancelarConsulta, INITIAL_AGENDAMENTOS } from '../../
 const STATUS_TABS = ['Todos', 'Confirmado', 'Concluído', 'Cancelado']
 
 export default function MeusAgendamentosPage() {
-  const [agendamentos, setAgendamentos] = useState(INITIAL_AGENDAMENTOS)
+  const [agendamentos, setAgendamentos] = useState([])
   const [statusAtivo, setStatusAtivo] = useState('Todos')
   const [carregando, setCarregando] = useState(false)
 
@@ -21,11 +21,9 @@ export default function MeusAgendamentosPage() {
     setCarregando(true)
     try {
       const dados = await meusAgendamentos()
-      if (dados && dados.length > 0) {
-        setAgendamentos(dados)
-      }
-    } catch {
-      setAgendamentos(INITIAL_AGENDAMENTOS)
+      setAgendamentos(dados || [])
+    } catch (err) {
+      console.error(err)
     } finally {
       setCarregando(false)
     }
@@ -50,11 +48,10 @@ export default function MeusAgendamentosPage() {
     if (!itemCancelando) return
     setSalvandoCancelamento(true)
     try {
-      // Usa id_agendamento — campo real retornado pelo backend
-      await cancelarConsulta(itemCancelando.id_agendamento)
+      await cancelarConsulta(itemCancelando.id)
       setAgendamentos((prev) =>
         prev.map((a) =>
-          String(a.id_agendamento) === String(itemCancelando.id_agendamento)
+          String(a.id) === String(itemCancelando.id)
             ? { ...a, status: 'Cancelado' }
             : a
         )

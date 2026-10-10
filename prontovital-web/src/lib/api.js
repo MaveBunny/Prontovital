@@ -14,14 +14,16 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Interceptor: redireciona para login se token expirar
+// Interceptor: redireciona para login se token expirar em rotas protegidas
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !error.config?.url?.includes('/auth/login')) {
       localStorage.removeItem('@prontovital:token')
       localStorage.removeItem('@prontovital:user')
-      window.location.href = '/'
+      if (window.location.pathname !== '/') {
+        window.location.href = '/'
+      }
     }
     return Promise.reject(error)
   }

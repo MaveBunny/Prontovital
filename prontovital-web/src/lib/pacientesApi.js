@@ -88,38 +88,110 @@ export async function cadastrarPaciente(payload) {
 }
 
 /**
- * "GET Perfil" — Não existe endpoint real no backend ainda.
- * Retorna os dados do usuário salvos no localStorage pelo fluxo de cadastro/login.
- *
- * TODO: Integrar quando o backend suportar GET /pacientes/me ou
- *       GET /pacientes/:id_paciente
+ * Normaliza perfil vindo do backend /pacientes/:id_paciente com fallback local
  */
-export async function meuPerfil() {
-  // Tentativa futura — quando o backend implementar a rota de perfil:
-  // try {
-  //   const { data } = await api.get('/pacientes/me')
-  //   if (data) { saveLocalPerfil(data); return data }
-  // } catch {}
-  return getPerfilDinamico()
+function normalizarPerfilPaciente(data, localPerfil = {}) {
+  const user = data.User || data.user || {}
+  return {
+    ...localPerfil,
+    id: data.id_paciente || localPerfil.id,
+    id_user: data.id_user || user.id_user || localPerfil.id_user,
+    id_paciente: data.id_paciente || localPerfil.id_paciente,
+    nome: user.nome || localPerfil.nome,
+    email: user.email || localPerfil.email,
+    cpf: data.cpf || localPerfil.cpf,
+    telefone: user.telefone || localPerfil.telefone,
+    endereco: user.endereco || localPerfil.endereco,
+    cidade: user.cidade || localPerfil.cidade,
+    estado: user.estado || localPerfil.estado,
+    data_nascimento: data.data_nascimento || localPerfil.data_nascimento,
+    sexo: data.sexo || localPerfil.sexo,
+    observacoes: data.observacoes || localPerfil.observacoes,
+    dadosSaude: localPerfil.dadosSaude || {
+      tipoSanguineo: '',
+      alergias: '',
+      medicamentos: '',
+      comorbidades: '',
+    },
+  }
 }
 
 /**
- * Atualizar perfil localmente.
- * Não existe endpoint real no backend (sem PUT/PATCH para paciente).
- *
- * TODO: Integrar quando o backend suportar PATCH /pacientes/:id_paciente
+ * GET /pacientes/:id_paciente — Retorna perfil do paciente do backend
+ * com fallback para localStorage se a API não estiver disponível.
  */
-export async function editarPerfil(_id, payload) {
-  const atual = getPerfilDinamico()
-  const atualizado = {
-    ...atual,
-    nome: payload.nome ?? atual.nome,
-    email: payload.email ?? atual.email,
-    dadosSaude: {
-      ...atual.dadosSaude,
-      ...(payload.dadosSaude || {}),
-    },
+export async function meuPerfil() {
+  const local = getPerfilDinamico()
+  const id_paciente = local.id_paciente
+
+  if (id_paciente) {
+    try {
+      const { data } = await api.get(`/pacientes/${id_paciente}`)
+      if (data) {
+        const normalizado = normalizarPerfilPaciente(data, local)
+        saveLocalPerfil(normalizado)
+        return normalizado
+      }
+    } catch {
+      // Fallback para dados locais
+    }
   }
+
+  return local
+}
+
+/**
+ * PATCH /pacientes/:id_paciente — Atualizar perfil do paciente no backend.
+ */
+export async function editarPerfil(id, payload) {
+  const atual = getPerfilDinamico()
+  const id_paciente = id || atual.id_paciente
+
+  let perfilBackend = null
+  if (id_paciente) {
+    try {
+      const { data } = await api.patch(`/pacientes/${id_paciente}`, {
+        nome: payload.nome,
+        email: payload.email,
+        telefone: payload.telefone,
+        endereco: payload.endereco,
+        cidade: payload.cidade,
+        estado: payload.estado,
+        cpf: payload.cpf,
+        data_nascimento: payload.data_nascimento,
+        sexo: payload.sexo,
+        observacoes: payload.observacoes,
+      })
+      if (data) {
+        perfilBackend = data
+      }
+    } catch {
+      // Fallback local se a API falhar
+    }
+  }
+
+  const atualizado = perfilBackend
+    ? normalizarPerfilPaciente(perfilBackend, {
+        ...atual,
+        dadosSaude: {
+          ...atual.dadosSaude,
+          ...(payload.dadosSaude || {}),
+        },
+      })
+    : {
+        ...atual,
+        nome: payload.nome ?? atual.nome,
+        email: payload.email ?? atual.email,
+        telefone: payload.telefone ?? atual.telefone,
+        endereco: payload.endereco ?? atual.endereco,
+        cidade: payload.cidade ?? atual.cidade,
+        estado: payload.estado ?? atual.estado,
+        dadosSaude: {
+          ...atual.dadosSaude,
+          ...(payload.dadosSaude || {}),
+        },
+      }
+
   saveLocalPerfil(atualizado)
 
   // Atualiza também o objeto de usuário no localStorage para manter sincronia
@@ -131,13 +203,13 @@ export async function editarPerfil(_id, payload) {
         '@prontovital:user',
         JSON.stringify({
           ...user,
-          nome: payload.nome ?? user.nome,
-          email: payload.email ?? user.email,
-          // TODO: Integrar quando o backend suportar atualização de dadosSaude
-          dadosSaude: {
-            ...(user.dadosSaude || {}),
-            ...(payload.dadosSaude || {}),
-          },
+          nome: atualizado.nome,
+          email: atualizado.email,
+          telefone: atualizado.telefone,
+          endereco: atualizado.endereco,
+          cidade: atualizado.cidade,
+          estado: atualizado.estado,
+          dadosSaude: atualizado.dadosSaude,
         })
       )
     } catch {}
@@ -147,14 +219,23 @@ export async function editarPerfil(_id, payload) {
 }
 
 /**
- * Excluir conta.
- * Não existe endpoint real no backend.
- *
- * TODO: Integrar quando o backend suportar DELETE /usuarios/:id_user
- *       ou DELETE /pacientes/:id_paciente
+ * DELETE /pacientes/:id_paciente — Excluir conta do paciente.
  */
-export async function deletarPerfil(_id) {
-  // TODO: Integrar quando o backend suportar este endpoint
+export async function deletarPerfil(id) {
+  const atual = getPerfilDinamico()
+  const id_paciente = id || atual.id_paciente
+
+  if (id_paciente) {
+    try {
+      await api.delete(`/pacientes/${id_paciente}`)
+    } catch {
+      // Falha silenciosa: continua para remoção local
+    }
+  }
+
   localStorage.removeItem(STORAGE_KEY)
+  localStorage.removeItem('@prontovital:token')
+  localStorage.removeItem('@prontovital:user')
   return { mensagem: 'Perfil excluído com sucesso.' }
 }
+

@@ -1,13 +1,12 @@
 import api from './api'
 
-/** GET /api/especialidades — Listar Especialidades (público/paciente) */
+/** GET /especialidades — Listar Especialidades (requer token) */
 export async function listarEspecialidades() {
-  const { data } = await api.get('/api/especialidades')
-  return data
-}
-
-/** POST /api/especialidades — Cadastrar Especialidade (admin) */
-export async function cadastrarEspecialidade(payload) {
-  const { data } = await api.post('/api/especialidades', payload)
-  return data
+  try {
+    const { data } = await api.get('/especialidades')
+    return Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('Erro ao buscar especialidades:', error)
+    return []
+  }
 }

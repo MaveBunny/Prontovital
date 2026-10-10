@@ -1,16 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-// TODO: Integrar quando o backend suportar este endpoint
-// O backend atual não possui tabela de triagens nem rota GET /triagens.
-// Os dados exibidos aqui são mockados no localStorage via triagemApi.js.
 import { historicoTriagens, INITIAL_TRIAGENS } from '../../../lib/triagensApi'
 import ModalAgendarConsulta from '../components/ModalAgendarConsulta'
 
 export default function HistoricoTriagensPage() {
   const navigate = useNavigate()
-  // TODO: Integrar quando o backend suportar este campo
-  // Inicia com os dados mockados definidos em triagemApi.js
-  const [triagens, setTriagens] = useState(INITIAL_TRIAGENS)
+  const [triagens, setTriagens] = useState([])
   const [expandidoId, setExpandidoId] = useState(null)
   const [carregando, setCarregando] = useState(false)
 
@@ -22,17 +17,13 @@ export default function HistoricoTriagensPage() {
     carregar()
   }, [])
 
-  // TODO: Integrar quando o backend suportar GET /triagens
-  // Por enquanto, historicoTriagens() lê apenas do localStorage
   async function carregar() {
     setCarregando(true)
     try {
       const dados = await historicoTriagens()
-      if (dados && dados.length > 0) {
-        setTriagens(dados)
-      }
-    } catch {
-      setTriagens(INITIAL_TRIAGENS)
+      setTriagens(dados || [])
+    } catch (err) {
+      console.error(err)
     } finally {
       setCarregando(false)
     }

@@ -30,11 +30,9 @@ export default function ProfissionaisPage() {
       setCarregando(true)
       try {
         const dados = await buscarProfissionais()
-        if (dados && dados.length > 0) {
-          setProfissionais(dados)
-        }
-      } catch {
-        setProfissionais(MOCK_PROFISSIONAIS)
+        setProfissionais(dados || [])
+      } catch (err) {
+        console.error(err)
       } finally {
         setCarregando(false)
       }

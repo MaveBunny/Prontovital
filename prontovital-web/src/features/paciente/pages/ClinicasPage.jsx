@@ -13,11 +13,9 @@ export default function ClinicasPage() {
       setCarregando(true)
       try {
         const dados = await listarClinicas()
-        if (dados && dados.length > 0) {
-          setClinicas(dados)
-        }
-      } catch {
-        setClinicas(MOCK_CLINICAS)
+        setClinicas(dados || [])
+      } catch (err) {
+        console.error(err)
       } finally {
         setCarregando(false)
       }
