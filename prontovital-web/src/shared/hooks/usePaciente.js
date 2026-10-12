@@ -19,7 +19,11 @@ export function usePaciente() {
       const data = await meuPerfil()
       setPaciente(data)
     } catch (err) {
-      setErro(err.response?.data?.message || 'Erro ao carregar perfil.')
+      setErro(
+        err.response?.data?.erro ||
+          err.response?.data?.message ||
+          'Erro ao carregar perfil.'
+      )
     } finally {
       setCarregando(false)
     }

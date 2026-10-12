@@ -5,23 +5,9 @@ import LoadingSpinner from '../../../components/shared/LoadingSpinner'
 import { deletarPerfil } from '../../../lib/pacientesApi'
 import { useAuth } from '../../../shared/hooks/useAuth'
 import { usePaciente } from '../../../shared/hooks/usePaciente'
-import { formatarData } from '../../../shared/utils/formatDate'
 import { useState } from 'react'
 
-// Dados mockados para quando não houver backend
-const MOCK_PACIENTE = {
-  id: '1',
-  nome: 'Maria Silva Santos',
-  email: 'maria.silva@email.com',
-  cpf: '123.456.789-00',
-  criadoEm: '2024-01-15T10:00:00Z',
-  dadosSaude: {
-    tipoSanguineo: 'O+',
-    alergias: 'Penicilina, Dipirona',
-    medicamentos: 'Losartana 50mg',
-    comorbidades: 'Hipertensão',
-  },
-}
+// Removido: MOCK_PACIENTE excluído — perfil consome GET /pacientes/:id_paciente.
 
 function InfoCard({ titulo, children }) {
   return (
@@ -48,13 +34,13 @@ export default function PerfilPage() {
   const [confirmandoDeletar, setConfirmandoDeletar] = useState(false)
   const [deletando, setDeletando] = useState(false)
 
-  // Usa mock como fallback quando não há backend
-  const paciente = dadosApi || MOCK_PACIENTE
+  // Sem mock: usa exclusivamente o backend (GET /pacientes/:id_paciente).
+  const paciente = dadosApi || null
 
   async function handleDeletar() {
     setDeletando(true)
     try {
-      await deletarPerfil(paciente.id)
+      await deletarPerfil(paciente?.id_paciente || paciente?.id)
       logout()
       navigate('/')
     } catch {
@@ -67,8 +53,19 @@ export default function PerfilPage() {
     return <LoadingSpinner size="lg" className="h-64" />
   }
 
-  const iniciais = paciente.nome
+  if (!paciente) {
+    return (
+      <div className="px-4 py-6">
+        <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center">
+          <p className="text-sm text-slate-500">Não foi possível carregar o perfil. Verifique sua conexão.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const iniciais = (paciente.nome || '?')
     .split(' ')
+    .filter(Boolean)
     .slice(0, 2)
     .map((n) => n[0])
     .join('')
@@ -87,36 +84,24 @@ export default function PerfilPage() {
           <Badge color="blue">Paciente</Badge>
           <Badge color="green">Ativo</Badge>
         </div>
-        <p className="text-xs text-slate-300 mt-2">
-          Membro desde {formatarData(paciente.criadoEm)}
-        </p>
       </div>
 
-      {/* Dados pessoais */}
+      {/* Dados pessoais — campos reais do backend (User + Paciente) */}
       <InfoCard titulo="Dados Pessoais">
         <InfoRow label="Nome completo" value={paciente.nome} />
         <InfoRow label="CPF" value={paciente.cpf} />
         <InfoRow label="E-mail" value={paciente.email} />
+        <InfoRow label="Telefone" value={paciente.telefone} />
+        <InfoRow label="Sexo" value={paciente.sexo} />
+        <InfoRow label="Nascimento" value={paciente.data_nascimento} />
+        <InfoRow label="Cidade/UF" value={paciente.cidade && paciente.estado ? `${paciente.cidade}/${paciente.estado}` : paciente.cidade || paciente.estado} />
+        <InfoRow label="Endereço" value={paciente.endereco} />
       </InfoCard>
 
-      {/* Dados de saúde */}
-      {paciente.dadosSaude && (
-        <InfoCard titulo="Dados de Saúde">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs text-slate-400">Tipo sanguíneo</span>
-            {paciente.dadosSaude.tipoSanguineo ? (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-red-50 text-red-600">
-                🩸 {paciente.dadosSaude.tipoSanguineo}
-              </span>
-            ) : (
-              <span className="text-sm text-slate-400">—</span>
-            )}
-          </div>
-          <InfoRow label="Alergias" value={paciente.dadosSaude.alergias} />
-          <InfoRow label="Medicamentos" value={paciente.dadosSaude.medicamentos} />
-          <InfoRow label="Comorbidades" value={paciente.dadosSaude.comorbidades} />
-        </InfoCard>
-      )}
+      {/* Observações clínicas (campo "observacoes" do modelo Paciente) */}
+      <InfoCard titulo="Observações">
+        <InfoRow label="Observações" value={paciente.observacoes} />
+      </InfoCard>
 
       {/* Ações */}
       <div className="flex flex-col gap-3 pt-2">

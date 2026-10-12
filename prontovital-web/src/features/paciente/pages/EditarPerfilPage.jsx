@@ -6,28 +6,24 @@ import Select from '../../../components/shared/Select'
 import { usePaciente } from '../../../shared/hooks/usePaciente'
 import { getPerfilDinamico } from '../../../lib/pacientesApi'
 
-const TIPOS_SANGUINEOS = [
-  { value: 'A+', label: 'A+' }, { value: 'A-', label: 'A-' },
-  { value: 'B+', label: 'B+' }, { value: 'B-', label: 'B-' },
-  { value: 'AB+', label: 'AB+' }, { value: 'AB-', label: 'AB-' },
-  { value: 'O+', label: 'O+' }, { value: 'O-', label: 'O-' },
-]
-
 export default function EditarPerfilPage() {
   const navigate = useNavigate()
   const { paciente, carregando: carregandoPerfil, atualizar } = usePaciente()
 
-  // Carrega dados reais do usuário logado como estado inicial do formulário
+  // Estado inicial — somente campos existentes no backend (User + Paciente)
   const perfilInicial = getPerfilDinamico()
 
   const [form, setForm] = useState({
     nome: paciente?.nome || perfilInicial?.nome || '',
     email: paciente?.email || perfilInicial?.email || '',
-    // TODO: Integrar quando o backend suportar estes campos de saúde
-    tipoSanguineo: paciente?.dadosSaude?.tipoSanguineo || perfilInicial?.dadosSaude?.tipoSanguineo || '',
-    alergias: paciente?.dadosSaude?.alergias || perfilInicial?.dadosSaude?.alergias || '',
-    medicamentos: paciente?.dadosSaude?.medicamentos || perfilInicial?.dadosSaude?.medicamentos || '',
-    comorbidades: paciente?.dadosSaude?.comorbidades || perfilInicial?.dadosSaude?.comorbidades || '',
+    telefone: paciente?.telefone || perfilInicial?.telefone || '',
+    endereco: paciente?.endereco || perfilInicial?.endereco || '',
+    cidade: paciente?.cidade || perfilInicial?.cidade || '',
+    estado: paciente?.estado || perfilInicial?.estado || '',
+    cpf: paciente?.cpf || perfilInicial?.cpf || '',
+    data_nascimento: paciente?.data_nascimento || perfilInicial?.data_nascimento || '',
+    sexo: paciente?.sexo || perfilInicial?.sexo || 'Masculino',
+    observacoes: paciente?.observacoes || perfilInicial?.observacoes || '',
   })
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
@@ -45,20 +41,30 @@ export default function EditarPerfilPage() {
     setSalvando(true)
     setErro('')
     try {
+      // PATCH /usuarios/perfil — somente campos do contrato do backend
       await atualizar({
         nome: form.nome,
         email: form.email,
-        dadosSaude: {
-          tipoSanguineo: form.tipoSanguineo || undefined,
-          alergias: form.alergias || undefined,
-          medicamentos: form.medicamentos || undefined,
-          comorbidades: form.comorbidades || undefined,
+        telefone: form.telefone,
+        endereco: form.endereco,
+        cidade: form.cidade,
+        estado: form.estado,
+        paciente: {
+          cpf: form.cpf,
+          data_nascimento: form.data_nascimento,
+          sexo: form.sexo,
+          observacoes: form.observacoes,
         },
       })
       setSucesso(true)
       setTimeout(() => navigate('/paciente/perfil'), 1200)
     } catch (err) {
-      setErro(err.response?.data?.message || 'Erro ao salvar. Tente novamente.')
+      setErro(
+        err.response?.data?.erro ||
+          err.response?.data?.mensagem ||
+          err.response?.data?.message ||
+          'Erro ao salvar. Tente novamente.'
+      )
     } finally {
       setSalvando(false)
     }
@@ -80,7 +86,7 @@ export default function EditarPerfilPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {/* Dados pessoais */}
+        {/* Dados pessoais (User) */}
         <div className="bg-white rounded-2xl border border-slate-100 p-5">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Dados Pessoais</p>
           <div className="flex flex-col gap-4">
@@ -102,44 +108,89 @@ export default function EditarPerfilPage() {
               onChange={handleChange}
               required
             />
+            <Input
+              label="Telefone"
+              name="telefone"
+              type="text"
+              placeholder="(00) 00000-0000"
+              value={form.telefone}
+              onChange={handleChange}
+              required
+            />
+            <Input
+              label="Endereço"
+              name="endereco"
+              type="text"
+              placeholder="Rua e número"
+              value={form.endereco}
+              onChange={handleChange}
+              required
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Cidade"
+                name="cidade"
+                type="text"
+                placeholder="Sua cidade"
+                value={form.cidade}
+                onChange={handleChange}
+                required
+              />
+              <Input
+                label="Estado (UF)"
+                name="estado"
+                type="text"
+                placeholder="Ex: PE"
+                value={form.estado}
+                onChange={handleChange}
+                maxLength={2}
+                required
+              />
+            </div>
           </div>
         </div>
 
-        {/* Dados de saúde */}
+        {/* Dados de paciente (Paciente) */}
         <div className="bg-white rounded-2xl border border-slate-100 p-5">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Dados de Saúde</p>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Dados de Paciente</p>
           <div className="flex flex-col gap-4">
+            <Input
+              label="CPF"
+              name="cpf"
+              type="text"
+              placeholder="Somente números"
+              value={form.cpf}
+              onChange={handleChange}
+              required
+            />
+            <Input
+              label="Data de Nascimento (AAAA-MM-DD)"
+              name="data_nascimento"
+              type="date"
+              value={form.data_nascimento}
+              onChange={handleChange}
+              required
+            />
             <Select
-              label="Tipo sanguíneo"
-              name="tipoSanguineo"
-              options={TIPOS_SANGUINEOS}
-              placeholder="Selecione"
-              value={form.tipoSanguineo}
+              label="Sexo"
+              name="sexo"
+              options={[
+                { value: 'Masculino', label: 'Masculino' },
+                { value: 'Feminino', label: 'Feminino' },
+                { value: 'Outro', label: 'Outro' },
+              ]}
+              value={form.sexo}
               onChange={handleChange}
+              required
             />
             <Input
-              label="Alergias"
-              name="alergias"
+              label="Observações Médicas"
+              name="observacoes"
               type="text"
-              placeholder="Ex: Penicilina, Dipirona"
-              value={form.alergias}
+              placeholder="Alergias, comorbidades..."
+              value={form.observacoes}
               onChange={handleChange}
-            />
-            <Input
-              label="Medicamentos em uso"
-              name="medicamentos"
-              type="text"
-              placeholder="Ex: Losartana 50mg, Metformina"
-              value={form.medicamentos}
-              onChange={handleChange}
-            />
-            <Input
-              label="Comorbidades"
-              name="comorbidades"
-              type="text"
-              placeholder="Ex: Diabetes, Hipertensão"
-              value={form.comorbidades}
-              onChange={handleChange}
+              required
             />
           </div>
         </div>
@@ -155,7 +206,7 @@ export default function EditarPerfilPage() {
           </p>
         )}
 
-        <Button type="submit" loading={salvando} className="w-full">
+        <Button type="submit" loading={salvando || carregandoPerfil} className="w-full">
           Salvar alterações
         </Button>
       </form>

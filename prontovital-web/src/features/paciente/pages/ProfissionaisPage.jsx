@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { buscarProfissionais, MOCK_PROFISSIONAIS } from '../../../lib/profissionaisApi'
 import ModalAgendarConsulta from '../components/ModalAgendarConsulta'
 
@@ -12,12 +12,11 @@ const ESPECIALIDADES = [
 ]
 
 export default function ProfissionaisPage() {
-  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const clinicaFiltroInicial = searchParams.get('clinica') || ''
 
   const [profissionais, setProfissionais] = useState(MOCK_PROFISSIONAIS)
-  const [busca, setBusca] = useState(clinicaFiltroInicial)
+  // Busca local — sem query params de URL (filtro por clínica removido; backend não suporta).
+  const [busca, setBusca] = useState('')
   const [especialidadeSelecionada, setEspecialidadeSelecionada] = useState('Todos')
   const [carregando, setCarregando] = useState(false)
 

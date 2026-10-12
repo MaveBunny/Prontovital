@@ -13,6 +13,7 @@ export default function ModalAgendarConsulta({
   medicoPreSelecionado = null,
   especialidadePreSelecionada = '',
   resumoTriagemInicial = '',
+  obvervacaoInicial = '',
   onSucesso = null,
 }) {
   const [medicoId, setMedicoId] = useState(
@@ -24,7 +25,10 @@ export default function ModalAgendarConsulta({
     return amanha.toISOString().split('T')[0]
   })
   const [horarioSelecionado, setHorarioSelecionado] = useState('09:30')
-  const [resumoTriagem, setResumoTriagem] = useState(resumoTriagemInicial)
+  // Campo de texto do backend — grafia exata: "obvervacao".
+  const [obvervacao, setObvervacao] = useState(
+    obvervacaoInicial || resumoTriagemInicial
+  )
   const [salvando, setSalvando] = useState(false)
   const [sucesso, setSucesso] = useState(false)
   const [erro, setErro] = useState('')
@@ -50,8 +54,9 @@ export default function ModalAgendarConsulta({
         especialidade: medico?.especialidade || especialidadePreSelecionada || 'Clínica Geral',
         clinicaNome: medico?.clinica || 'Clínica Saúde Total',
         dataHora: dataHoraIso,
-        resumoTriagem:
-          resumoTriagem ||
+        obvervacao:
+          obvervacao ||
+          obvervacaoInicial ||
           resumoTriagemInicial ||
           'Consulta solicitada via plataforma ProntoVital.',
       })
@@ -164,14 +169,14 @@ export default function ModalAgendarConsulta({
               </div>
             </div>
 
-            {/* Resumo da Triagem / Sintomas */}
+            {/* Observação (campo "obvervacao" do backend) */}
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Resumo da Triagem / Observações Clínicas
+                Observação
               </label>
               <textarea
-                value={resumoTriagem}
-                onChange={(e) => setResumoTriagem(e.target.value)}
+                value={obvervacao}
+                onChange={(e) => setObvervacao(e.target.value)}
                 placeholder="Descreva brevemente seus sintomas ou motivo da consulta..."
                 rows={3}
                 className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none leading-relaxed"

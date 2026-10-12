@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { meusAgendamentos, cancelarConsulta, INITIAL_AGENDAMENTOS } from '../../../lib/agendamentosApi'
+import { meusAgendamentos, cancelarConsulta } from '../../../lib/agendamentosApi'
 
-const STATUS_TABS = ['Todos', 'Confirmado', 'Concluído', 'Cancelado']
+// Backend Agendamento.status = ENUM("confirmado","cancelado").
+// "Concluído" e "Confirmado" ocultos do filtro — visíveis: Todos + Cancelado.
+// ("Confirmado" aparece dentro de "Todos"; sem botão dedicado por regra de UI.)
+const STATUS_TABS = ['Todos', 'Cancelado']
 
 export default function MeusAgendamentosPage() {
-  const [agendamentos, setAgendamentos] = useState(INITIAL_AGENDAMENTOS)
+  const [agendamentos, setAgendamentos] = useState([])
   const [statusAtivo, setStatusAtivo] = useState('Todos')
   const [carregando, setCarregando] = useState(false)
 
@@ -21,11 +24,9 @@ export default function MeusAgendamentosPage() {
     setCarregando(true)
     try {
       const dados = await meusAgendamentos()
-      if (dados && dados.length > 0) {
-        setAgendamentos(dados)
-      }
+      setAgendamentos(Array.isArray(dados) ? dados : [])
     } catch {
-      setAgendamentos(INITIAL_AGENDAMENTOS)
+      setAgendamentos([])
     } finally {
       setCarregando(false)
     }
@@ -166,16 +167,16 @@ export default function MeusAgendamentosPage() {
 
                 </div>
 
-                {/* Caixa Azul: Resumo da Triagem (conforme Imagem 4) */}
+                {/* Caixa Azul: Observação do agendamento (campo "obvervacao" do backend) */}
                 <div className="bg-sky-50/60 border border-sky-100/80 rounded-xl p-4 mb-3">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-teal-700 tracking-wider mb-1.5">
                     <svg className="w-4 h-4 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
                     </svg>
-                    <span>RESUMO DA TRIAGEM</span>
+                    <span>OBSERVAÇÃO</span>
                   </div>
                   <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                    {item.resumoTriagem}
+                    {item.obvervacao || item.observacao || item.resumoTriagem}
                   </p>
                 </div>
 

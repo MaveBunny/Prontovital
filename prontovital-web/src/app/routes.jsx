@@ -60,8 +60,8 @@ export default function AppRoutes() {
         }
       />
 
-      {/* ── Redirecionamento da Triagem para a Pré-Triagem do Paciente ── */}
-      <Route path="/triagem/*" element={<Navigate to="/paciente/pre-triagem" replace />} />
+      {/* ── Redirecionamento legado da Triagem → Clínicas (Pré-Triagem oculta) ── */}
+      <Route path="/triagem/*" element={<Navigate to="/paciente/clinicas" replace />} />
 
       {/* ── Fallback ── */}
       <Route path="*" element={<Navigate to="/" replace />} />

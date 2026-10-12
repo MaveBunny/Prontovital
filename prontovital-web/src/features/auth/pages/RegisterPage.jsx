@@ -157,6 +157,11 @@ function FormPaciente({ onSuccess }) {
     e.preventDefault()
     setLoading(true)
     try {
+      // Backend espera data_nascimento em "AAAA-MM-DD".
+      // Aceita "DD/MM/AAAA" digitado e converte; se já vier ISO, mantém.
+      let dataNasc = form.data_nascimento.trim()
+      const m = dataNasc.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+      if (m) dataNasc = `${m[3]}-${m[2]}-${m[1]}`
       const payload = {
         nome: form.nome,
         email: form.email,
@@ -168,7 +173,7 @@ function FormPaciente({ onSuccess }) {
         perfil: "paciente",
         paciente: {
           cpf: form.cpf.replace(/\D/g, ''),
-          data_nascimento: form.data_nascimento,
+          data_nascimento: dataNasc,
           sexo: form.sexo,
           observacoes: form.observacoes || "Nenhuma observação"
         }
@@ -176,12 +181,13 @@ function FormPaciente({ onSuccess }) {
       await cadastrarPaciente(payload)
       onSuccess()
     } catch (err) {
-      if (err.message === 'Network Error' || err.code === 'ERR_NETWORK') {
-        await new Promise(r => setTimeout(r, 800));
-        onSuccess()
-      } else {
-        setErro(err.response?.data?.message || 'Erro ao criar conta. Tente novamente.')
-      }
+      // Erros reais do backend (400/409/500) — sem fallback fictício
+      setErro(
+        err.response?.data?.mensagem ||
+        err.response?.data?.erro ||
+        err.response?.data?.message ||
+        'Erro ao criar conta. Tente novamente.'
+      )
     } finally {
       setLoading(false)
     }

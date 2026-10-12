@@ -11,7 +11,9 @@ export default function PacienteRoutes() {
   return (
     <Routes>
       <Route element={<PacienteLayout />}>
-        <Route index element={<Navigate to="pre-triagem" replace />} />
+        {/* Redirecionamento inicial: Clínicas (Pré-Triagem oculta — sem backend) */}
+        <Route index element={<Navigate to="clinicas" replace />} />
+        {/* Rotas futuras mantidas para histórico — ocultas do menu, sem link visível */}
         <Route path="pre-triagem" element={<PreTriagemPage />} />
         <Route path="clinicas" element={<ClinicasPage />} />
         <Route path="profissionais" element={<ProfissionaisPage />} />
@@ -19,8 +21,8 @@ export default function PacienteRoutes() {
         <Route path="historico-triagens" element={<HistoricoTriagensPage />} />
         <Route path="perfil" element={<MeuPerfilPage />} />
         {/* Compatibilidade de rotas antigas */}
-        <Route path="dashboard" element={<Navigate to="pre-triagem" replace />} />
-        <Route path="triagem" element={<Navigate to="pre-triagem" replace />} />
+        <Route path="dashboard" element={<Navigate to="clinicas" replace />} />
+        <Route path="triagem" element={<Navigate to="clinicas" replace />} />
       </Route>
     </Routes>
   )

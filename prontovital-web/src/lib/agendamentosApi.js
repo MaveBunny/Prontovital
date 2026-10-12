@@ -2,7 +2,8 @@ import api from './api'
 
 const STORAGE_KEY = '@prontovital:agendamentos'
 
-// Dados mockados usados como fallback quando a API não responde
+// Dados legados mantidos apenas para compat de import — NÃO usar como fallback.
+// As listagens agora partem de [] e consomem o backend real.
 export const INITIAL_AGENDAMENTOS = [
   {
     id: '1',
@@ -14,8 +15,7 @@ export const INITIAL_AGENDAMENTOS = [
     dataHora: '2026-09-20T09:30:00',
     dataFormatada: '20/09/2026 · 09:30',
     status: 'Confirmado',
-    // TODO: Integrar quando o backend suportar este campo
-    resumoTriagem:
+    obvervacao:
       'Paciente relata tontura intensa há 3 dias com intensidade 7/10. Histórico de hipertensão e diabetes. Sinais sugestivos de episódio hipertensivo. Recomenda-se avaliação cardiológica prioritária.',
   },
   {
@@ -28,8 +28,7 @@ export const INITIAL_AGENDAMENTOS = [
     dataHora: '2026-08-15T14:00:00',
     dataFormatada: '15/08/2026 · 14:00',
     status: 'Concluído',
-    // TODO: Integrar quando o backend suportar este campo
-    resumoTriagem:
+    obvervacao:
       'Dor no joelho direito há 2 semanas, intensidade 5/10. Dificuldade ao subir escadas. Suspeita de condromalácia patelar.',
   },
 ]
@@ -39,9 +38,9 @@ export const INITIAL_AGENDAMENTOS = [
 function getLocalAgendamentos() {
   try {
     const data = localStorage.getItem(STORAGE_KEY)
-    return data ? JSON.parse(data) : INITIAL_AGENDAMENTOS
+    return data ? JSON.parse(data) : []
   } catch {
-    return INITIAL_AGENDAMENTOS
+    return []
   }
 }
 
@@ -148,11 +147,12 @@ function normalizarAgendamento(a, index) {
     dataHora: dataHoraISO,
     dataFormatada,
     status: statusNormalizado,
-    // TODO: Integrar quando o backend suportar este campo
-    // O campo "obvervacao" (com erro de digitação no modelo) é usado como fallback
-    resumoTriagem:
+    // Campo de texto do modelo do backend — grafia exata: "obvervacao".
+    // Leitura tolerante: obvervacao (backend) || observacao (alias) || resumoTriagem (legado).
+    obvervacao:
       a.obvervacao ||
       a.observacao ||
+      a.resumoTriagem ||
       'Consulta agendada via plataforma ProntoVital.',
   }
 }
@@ -167,11 +167,11 @@ export async function meusAgendamentos() {
   const id_paciente = getIdPacienteLocal()
 
   if (!id_paciente) {
-    // Sem id_paciente disponível (usuário não totalmente carregado), usa fallback
-    return getLocalAgendamentos()
+    return []
   }
 
   try {
+    // Listagem limpa — sem query params de filtro (backend não suporta).
     const { data } = await api.get(`/pacientes/${id_paciente}/agendamentos`)
 
     if (Array.isArray(data)) {
@@ -241,8 +241,10 @@ export async function agendarConsulta(payload) {
           id_clinica: payload.id_clinica,
           data_agendamento: dataAgendamento,
           horario_agendamento: horarioAgendamento,
-          // TODO: Integrar quando o backend suportar este campo
-          observacao: payload.resumoTriagem || payload.observacao || null,
+          // Backend documenta "observacao"; modelo físico grava "obvervacao".
+          // Enviamos ambos para garantir persistência + exibição.
+          observacao: payload.obvervacao || payload.resumoTriagem || payload.observacao || null,
+          obvervacao: payload.obvervacao || payload.resumoTriagem || payload.observacao || null,
         }
       )
       return normalizarAgendamento(data, 0)
@@ -275,8 +277,8 @@ export async function agendarConsulta(payload) {
     dataHora: payload.dataHora || new Date().toISOString(),
     dataFormatada,
     status: 'Confirmado',
-    // TODO: Integrar quando o backend suportar este campo
-    resumoTriagem:
+    obvervacao:
+      payload.obvervacao ||
       payload.resumoTriagem ||
       'Consulta agendada diretamente pelo paciente via plataforma ProntoVital.',
   }

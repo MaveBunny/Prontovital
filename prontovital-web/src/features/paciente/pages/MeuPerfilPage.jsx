@@ -1,24 +1,22 @@
-import React, { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-// TODO: Integrar quando o backend suportar GET /pacientes/:id (perfil completo)
-// A função meuPerfil() abaixo lê do localStorage — o backend não tem essa rota ainda.
-import { getPerfilDinamico, deletarPerfil } from '../../../lib/pacientesApi'
+import { usePaciente } from '../../../shared/hooks/usePaciente'
 import { useAuth } from '../../../shared/hooks/useAuth'
+import { deletarPerfil } from '../../../lib/pacientesApi'
 
 export default function MeuPerfilPage() {
   const { usuario, logout } = useAuth()
   const navigate = useNavigate()
 
-  // Carrega o perfil a partir do usuário salvo no localStorage
-  const [perfil, setPerfil] = useState(() => getPerfilDinamico())
+  // Perfil completo — GET /pacientes/:id_paciente (backend real)
+  const { paciente, carregando } = usePaciente()
+
   const [modalExcluir, setModalExcluir] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
   const [erro, setErro] = useState('')
 
-  // Recarrega o perfil caso o usuário logado mude (ex: após edição)
-  useEffect(() => {
-    setPerfil(getPerfilDinamico())
-  }, [usuario])
+  // Dados reais retornados pelo backend (User + Paciente)
+  const perfil = paciente || {}
 
   // ── Campos reais do backend (User + Paciente) ──────────────────────────
   const nomeExibicao = perfil.nome || usuario?.nome || '—'
@@ -40,12 +38,8 @@ export default function MeuPerfilPage() {
       })()
     : '—'
 
-  // ── Campos SEM suporte real no backend (mockados) ──────────────────────
-  // TODO: Integrar quando o backend suportar estes campos
-  const tipoSanguineo = perfil.dadosSaude?.tipoSanguineo || '—'
-  const alergias = perfil.dadosSaude?.alergias || '—'
-  const medicamentos = perfil.dadosSaude?.medicamentos || '—'
-  const comorbidades = perfil.dadosSaude?.comorbidades || '—'
+  // ── Campo clínico real do backend (Paciente.observacoes) ─────────────────
+  const observacoesExibicao = perfil.observacoes || '—'
 
   const iniciais = nomeExibicao
     .split(' ')
@@ -59,7 +53,7 @@ export default function MeuPerfilPage() {
     setExcluindo(true)
     setErro('')
     try {
-      // TODO: Integrar quando o backend suportar DELETE /usuarios/:id
+      // PATCH /usuarios/perfil/cancelar — desativa a conta (ativo = false)
       await deletarPerfil(perfil.id_user || usuario?.id_user)
       logout()
       navigate('/')
@@ -73,6 +67,18 @@ export default function MeuPerfilPage() {
   return (
     <div className="p-6 md:p-10 lg:p-12 w-full max-w-2xl animate-[fadeIn_0.3s_ease-out]">
       
+      {/* ── Carregando perfil do backend ── */}
+      {carregando && !paciente && (
+        <div className="flex items-center justify-center py-20">
+          <svg className="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        </div>
+      )}
+
+      {!carregando && (
+      <>
       {/* ── Card Principal do Perfil (conforme Imagem 2) ── */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-6 md:p-8 mb-6">
         
@@ -139,46 +145,19 @@ export default function MeuPerfilPage() {
         {/* Divisor */}
         <div className="border-t border-slate-100 my-5" />
 
-        {/* Seção Dados de Saúde */}
+        {/* Seção Observações clínicas (campo real do backend) */}
         <div>
           <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4">
-            DADOS DE SAÚDE
+            OBSERVAÇÕES CLÍNICAS
           </h3>
 
           <div className="space-y-4">
             <div>
               <span className="block text-xs font-semibold text-slate-700 mb-1">
-                Tipo sanguíneo
+                Observações
               </span>
               <span className="block text-xs text-slate-500 font-normal">
-                {tipoSanguineo}
-              </span>
-            </div>
-
-            <div>
-              <span className="block text-xs font-semibold text-slate-700 mb-1">
-                Alergias
-              </span>
-              <span className="block text-xs text-slate-500 font-normal">
-                {alergias}
-              </span>
-            </div>
-
-            <div>
-              <span className="block text-xs font-semibold text-slate-700 mb-1">
-                Medicamentos em uso
-              </span>
-              <span className="block text-xs text-slate-500 font-normal">
-                {medicamentos}
-              </span>
-            </div>
-
-            <div>
-              <span className="block text-xs font-semibold text-slate-700 mb-1">
-                Comorbidades
-              </span>
-              <span className="block text-xs text-slate-500 font-normal">
-                {comorbidades}
+                {observacoesExibicao}
               </span>
             </div>
           </div>
@@ -234,6 +213,9 @@ export default function MeuPerfilPage() {
             </div>
           </div>
         </div>
+      )}
+
+      </>
       )}
 
     </div>

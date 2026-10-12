@@ -15,10 +15,13 @@ api.interceptors.request.use((config) => {
 })
 
 // Interceptor: redireciona para login se token expirar
+// (não deve disparar na própria requisição de login — erro 401 de
+// credenciais inválidas precisa chegar ao formulário)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const ehLogin = error.config?.url?.includes('/auth/login')
+    if (error.response?.status === 401 && !ehLogin) {
       localStorage.removeItem('@prontovital:token')
       localStorage.removeItem('@prontovital:user')
       window.location.href = '/'

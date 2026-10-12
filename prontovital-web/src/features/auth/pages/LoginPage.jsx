@@ -21,13 +21,15 @@ export default function LoginPage() {
     setErro('')
     try {
       const data = await login({ email: form.loginId, senha: form.senha })
-      const tipo = data.usuario?.tipo || 'paciente'
-      if (tipo === 'profissional') return navigate('/profissional/dashboard')
+      // Backend retorna usuario.perfil: "paciente" | "profissional" | "clinica" | "admin"
+      const tipo = data.usuario?.perfil || data.usuario?.tipo || 'paciente'
+      if (tipo === 'profissional') return navigate('/profissional/agenda')
       if (tipo === 'clinica') return navigate('/clinica/dashboard')
       if (tipo === 'admin') return navigate('/admin/clinicas')
-      navigate('/paciente/pre-triagem')
+      navigate('/paciente/clinicas')
     } catch (err) {
       setErro(
+        err.response?.data?.erro ||
         err.response?.data?.mensagem ||
         err.response?.data?.message ||
         'E-mail/CPF ou senha incorretos.'
@@ -65,13 +67,6 @@ export default function LoginPage() {
       <Button type="submit" loading={carregando} className="w-full mt-1">
         Entrar
       </Button>
-
-      <button
-        type="button"
-        className="text-xs text-blue-600 hover:underline text-center mt-1"
-      >
-        Esqueceu a senha?
-      </button>
     </form>
   )
 }

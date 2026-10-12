@@ -129,7 +129,7 @@ export default function ClinicasPage() {
                     {clinica.telefone || '(81) 3333-0000'}
                   </span>
                   <button
-                    onClick={() => navigate(`/paciente/profissionais?clinica=${encodeURIComponent(clinica.nome)}`)}
+                    onClick={() => navigate('/paciente/profissionais')}
                     className="text-blue-600 hover:text-blue-700 font-bold transition-colors flex items-center gap-1 cursor-pointer"
                   >
                     {labelProf}
