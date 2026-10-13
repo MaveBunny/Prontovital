@@ -1,11 +1,10 @@
 # ProntoVital — Plataforma Digital Integrada de Saúde e Agendamentos Inteligentes
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Status-Em%20Produ%C3%A7%C3%A3o%20%2F%20Nuvem-success?style=for-the-badge" alt="Status" />
+  <img src="https://img.shields.io/badge/Status-Ativo-success?style=for-the-badge" alt="Status" />
   <img src="https://img.shields.io/badge/Frontend-React%2019%20%7C%20Vite%20%7C%20Tailwind-blue?style=for-the-badge" alt="Frontend" />
   <img src="https://img.shields.io/badge/Backend-Node.js%20%7C%20Express%20%7C%20Sequelize-green?style=for-the-badge" alt="Backend" />
-  <img src="https://img.shields.io/badge/Database-PostgreSQL%20(Cloud)-informational?style=for-the-badge" alt="Database" />
-  <img src="https://img.shields.io/badge/Cloud%20Host-Render-purple?style=for-the-badge" alt="Render" />
+  <img src="https://img.shields.io/badge/Database-PostgreSQL-informational?style=for-the-badge" alt="Database" />
 </p>
 
 ---
@@ -24,8 +23,8 @@
 6. [Estrutura de Diretórios (Frontend)](#-estrutura-de-diretórios-frontend)
 7. [Instalação e Execução Local](#-instalação-e-execução-local)
 8. [Configuração de Ambiente](#-configuração-de-ambiente)
-9. [Integração e Acesso à API na Nuvem](#-integração-e-acesso-à-api-na-nuvem)
-10. [Tabela de Credenciais para Demonstração](#-tabela-de-credenciais-para-demonstração)
+9. [Segurança e Autenticação](#-segurança-e-autenticação)
+10. [Scripts do Projeto](#-scripts-do-projeto)
 11. [Contribuidores e Autoria](#-contribuidores-e-autoria)
 
 ---
@@ -34,7 +33,7 @@
 
 O **ProntoVital** é uma solução digital corporativa concebida para transformar a forma como pacientes, unidades de saúde e médicos se conectam. Projetado prioritariamente no contexto do **Polo Médico de Recife (PE)** — considerado o segundo maior polo de saúde do Brasil e referência em procedimentos complexos no Nordeste —, o sistema atua como uma ponte estratégica entre a demanda do cidadão e a capacidade de atendimento da rede parceira.
 
-A plataforma combina **UX intuitiva**, **arquitetura de microsserviços/APIs RESTful**, **banco de dados em nuvem em tempo real** e **capacidades de triagem orientada**, fornecendo um ecossistema seguro e escalável tanto para navegadores desktop quanto para dispositivos móveis (PWA).
+A plataforma combina **UX intuitiva**, **arquitetura de microsserviços/APIs RESTful**, **banco de dados relacional** e **capacidades de triagem orientada**, fornecendo um ecossistema seguro e escalável tanto para navegadores desktop quanto para dispositivos móveis (PWA).
 
 ---
 
@@ -49,7 +48,7 @@ A plataforma combina **UX intuitiva**, **arquitetura de microsserviços/APIs RES
 * **Orientação e Pré-Triagem:** Interface amigável para levantamento de queixas e sintomas, direcionando o paciente à especialidade correta.
 * **Agendamento Inteligente em Tempo Real:** Consulta dinâmica à disponibilidade de agenda dos profissionais por data e turno, eliminando conflitos de horário.
 * **Gestão Multiclínica:** Painéis administrativos independentes que permitem o gerenciamento de múltiplas unidades médicas e convênios na mesma base.
-* **Conexão em Nuvem 24/7:** Sincronização centralizada sem dependência de ambientes locais de banco de dados.
+* **Integração em Nuvem:** Sincronização centralizada com persistência em banco relacional seguro.
 
 ---
 
@@ -58,7 +57,7 @@ A plataforma combina **UX intuitiva**, **arquitetura de microsserviços/APIs RES
 * **Acessibilidade & Usabilidade (UX/UI):** Design system consistente baseado no Figma, tipografia clara (Inter), alto contraste, navegação ágil e responsividade completa para celulares, tablets e desktops.
 * **Segurança e Proteção de Dados:** Autenticação stateless via **JSON Web Tokens (JWT)**, armazenamento criptografado de credenciais via **Bcrypt** e validação de autorização por middleware em todas as rotas restritas.
 * **Arquitetura Baseada em Recursos (Feature-Driven):** Código desacoplado por domínio de negócio (`admin`, `clinica`, `profissional`, `paciente`), facilitando manutenção, testes e evolução independente de telas.
-* **Zero Mocks na Camada Administrativa e Clínica:** Toda a área operacional consome endpoints HTTP reais da API em nuvem, garantindo fidelidade total nas demonstrações e no uso em produção.
+* **Integração Real com API:** Todas as operações administrativas e clínicas consomem endpoints HTTP autenticados, com zero persistência fictícia ou dados mockados.
 
 ---
 
@@ -85,7 +84,7 @@ O ProntoVital implementa um rigoroso controle de acesso baseado em papéis (*Rol
 Perfil estratégico com permissões totais para orquestrar a rede:
 * **Gestão de Clínicas:** Cadastro de unidades de saúde parceiras via `POST /usuarios` com definição de credenciais de acesso, CNPJ, endereço completo, telefone e bairro.
 * **Gestão de Profissionais:** Credenciamento de novos médicos (CRM, estado emissor, CPF) e vinculação oficial a uma ou mais clínicas conveniadas via `PATCH /clinicas/:id/profissionais/:id`.
-* **Central de Agendamentos:** Visualização de todas as consultas da rede de saúde, cancelamento assistido e criação manual de consultas (selecionando paciente, médico, unidade e horário vago em tempo real).
+* **Central de Agendamentos:** Visualização de todas as consultas da rede de saúde, cancelamento assistido e criação de consultas (selecionando paciente, médico, unidade e horário vago em tempo real).
 
 ### 4.2 Clínicas Parceiras (`clinica`)
 Painel operacional para administração da unidade de saúde:
@@ -99,7 +98,7 @@ Painel operacional para administração da unidade de saúde:
 ### 4.3 Profissionais de Saúde (`profissional`)
 Ambiente de trabalho focado no atendimento médico:
 * **Agenda Médica:** Acompanhamento dinâmico das consultas confirmadas e canceladas.
-* **Gestão de Consultas:** Acesso rápido à listagem de pacientes agendados.
+* **Gestão de Consultas:** Acesso rápido à listagem de atendimentos da jornada.
 
 ### 4.4 Pacientes (`paciente`)
 Área voltada ao usuário final do sistema de saúde:
@@ -116,15 +115,14 @@ Ambiente de trabalho focado no atendimento médico:
 * **React 19:** Biblioteca base com hooks modernos (`useState`, `useEffect`, `useCallback`, `useContext`).
 * **Vite 8:** Ambiente de compilação ultrarrápido com Hot Module Replacement (HMR).
 * **React Router DOM 7:** Roteamento declarativo com layouts aninhados e rotas protegidas por token.
-* **Tailwind CSS 4:** Estilização com design tokens, layout flexbox/grid e microinterações.
+* **Tailwind CSS 4:** Estilização utilitária com design tokens, flexbox/grid e microinterações.
 * **Axios:** Cliente HTTP com interceptors que injetam o cabeçalho `Authorization: Bearer <token>` em todas as requisições autenticadas e tratam expiração de sessão.
 
-### Backend & Nuvem (`prontovital-api`)
+### Backend & Banco de Dados (`prontovital-api`)
 * **Node.js & Express 5:** Servidor RESTful com arquitetura em camadas (Rotas, Controladores, Modelos, Middlewares).
 * **Sequelize ORM:** Mapeamento objeto-relacional com relacionamentos `1:N` e `N:N` (`User`, `Clinica`, `Profissional`, `Paciente`, `Agendamento`, `Horario`, `ClinicaProfissional`).
-* **PostgreSQL 16:** Banco de dados relacional hospedado na nuvem.
-* **Render:** Infraestrutura em nuvem com deploy contínuo integrado ao GitHub.
-* **Swagger (OpenAPI 3.0):** Documentação interativa em `/api-docs`.
+* **PostgreSQL 16:** Banco de dados relacional com integridade referencial.
+* **Swagger (OpenAPI 3.0):** Documentação interativa dos contratos de API.
 
 ---
 
@@ -160,8 +158,8 @@ prontovital-web/
 │   │   ├── hooks/              # Custom hooks (useAuth, usePaciente)
 │   │   └── utils/              # Funções utilitárias (formatação de datas, moedas e strings)
 │   └── styles/                 # Estilos globais e diretivas do Tailwind
-├── .env                        # Variáveis de ambiente locais
-├── .env.example                # Template de configuração de ambiente
+├── .env                        # Variáveis de ambiente locais (não comitado)
+├── .env.example                # Modelo de configuração de ambiente
 ├── package.json                # Manifesto de dependências e scripts do npm
 └── vite.config.js              # Configurações do compilador Vite
 ```
@@ -212,57 +210,26 @@ prontovital-web/
 
 ## ⚙️ Configuração de Ambiente
 
-No arquivo `prontovital-web/.env`, a URL da API já vem configurada para apontar diretamente para a nuvem:
+As configurações de conexão são mantidas no arquivo `.env` (ignorado pelo versionamento para proteção de dados). Consulte o modelo em `.env.example`:
 
 ```env
-# Conexão direta com a API em Produção na Nuvem (Render)
-VITE_API_URL=https://prontovital-api.onrender.com
-
-# Para desenvolvimento apontando para backend local (se aplicável):
-# VITE_API_URL=http://localhost:3000
+# URL base da API do ProntoVital
+VITE_API_URL=http://localhost:3000
 ```
 
-> [!TIP]
-> **Vantagem da Nuvem:** Não é necessário rodar contêineres Docker nem ter o PostgreSQL instalado na sua máquina para testar e demonstrar o sistema. O frontend se comunica diretamente com o banco de dados oficial hospedado no Render.
+> [!NOTE]
+> Para conectar a instâncias de desenvolvimento compartilhadas ou homologação em nuvem, atualize o valor de `VITE_API_URL` com a URL do ambiente fornecida internamente pela equipe de infraestrutura.
 
 ---
 
-## ☁️ Integração e Acesso à API na Nuvem
+## 🔒 Segurança e Autenticação
 
-A API do ProntoVital está publicada e disponível para testes e integrações:
-
-* **URL Base da API:** `https://prontovital-api.onrender.com`
-* **Documentação Interativa (Swagger):** [https://prontovital-api.onrender.com/api-docs](https://prontovital-api.onrender.com/api-docs)
-
-### Como autenticar no Swagger para testar endpoints restritos:
-1. Abra a rota `POST /auth/login` no Swagger.
-2. Envie o login de admin:
-   ```json
-   {
-     "email": "admin@email.com",
-     "senha": "coxinha123"
-   }
-   ```
-3. Copie o token retornado no campo `"token"`.
-4. Clique no botão verde **Authorize** no topo do Swagger.
-5. No campo **Value**, cole **apenas o código do token** (sem aspas e sem a palavra `Bearer`).
-6. Clique em **Authorize** e feche a janela. Todos os endpoints restritos estarão liberados para execução.
-
----
-
-## 🔑 Tabela de Credenciais para Demonstração
-
-Para facilitar apresentações acadêmicas e testes práticos de usabilidade, as seguintes contas estão ativas e populadas no banco de dados na nuvem:
-
-| Papel / Perfil | Nome de Exibição | E-mail de Acesso | Senha | Funcionalidades / Destaques |
-| :--- | :--- | :--- | :--- | :--- |
-| **🛡️ Administrador Global** | `admin` | `admin@email.com` | `coxinha123` | Gestão de Clínicas, Credenciamento de Médicos e Agendamentos da Rede |
-| **🛡️ Administrador Backup** | `Administrador` | `admin@prontovital.com` | `admin` | Conta de suporte administrativo |
-| **🏥 Clínica Parceira** | `Cia&Sorriso` | `ciaesorriso@gmail.com` | `admin` | Unidade Rosarinho (Possui médica vinculada e agenda ativa) |
-| **🏥 Clínica Parceira** | `Nem um pelo` | `nemumpelo@gmail.com` | `admin` | Unidade Boa Viagem |
-| **🩺 Médico Parceiro** | `Dr. Amanda Virginia` | `amandavirginia@gmail.com` | `admin` | CRM: PE-58244 (Vinculada à Cia&Sorriso) |
-| **🩺 Médico Parceiro** | `Dr Marcos Scorn` | `marcosScorn@gmail.com` | `admin` | CRM: PE-58245 |
-| **👤 Paciente** | `Severino Cavalcanti` | `severino@email.com` | `senhaForte123` | Consulta e agendamento de consultas |
+* **Controle de Acesso:** A comunicação entre o frontend e a API é protegida por **Tokens JWT** enviados via cabeçalho HTTP:
+  ```http
+  Authorization: Bearer <seu_token_jwt>
+  ```
+* **Criptografia de Senhas:** Senhas são processadas com algoritmo de hash unidirecional seguro (**Bcrypt**) com *salt* no momento do cadastro.
+* **Proteção de Credenciais:** Contas de acesso e chaves de segurança são de uso restrito e devem ser geradas através dos fluxos de cadastro da aplicação ou solicitadas à equipe administrativa do projeto.
 
 ---
 
@@ -282,5 +249,4 @@ Executados a partir da pasta `prontovital-web`:
 
 Projeto desenvolvido para a solução digital integrada de saúde **ProntoVital**.
 
-* **Equipe de Desenvolvimento:** ProntoVital Team
 * **Repositório Oficial:** [github.com/MaveBunny/Prontovital](https://github.com/MaveBunny/Prontovital)

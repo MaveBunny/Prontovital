@@ -1,6 +1,6 @@
 # ProntoVital — Frontend Web Application
 
-> Aplicação web desenvolvida com **React 19**, **Vite** e **Tailwind CSS**, conectada à API RESTful na nuvem do ProntoVital.
+> Aplicação web desenvolvida com **React 19**, **Vite** e **Tailwind CSS**, conectada à API RESTful do ProntoVital.
 
 Consulte a documentação completa no [README principal da raiz do repositório](../README.md).
 
@@ -17,10 +17,7 @@ Consulte a documentação completa no [README principal da raiz do repositório]
    ```bash
    cp .env.example .env
    ```
-   Certifique-se de que a variável aponta para a API na nuvem:
-   ```env
-   VITE_API_URL=https://prontovital-api.onrender.com
-   ```
+   Configure a variável `VITE_API_URL` de acordo com o seu ambiente (local ou nuvem).
 
 3. **Inicie o servidor de desenvolvimento:**
    ```bash
@@ -32,12 +29,3 @@ Consulte a documentação completa no [README principal da raiz do repositório]
    ```bash
    npm run build
    ```
-
----
-
-## 🔑 Credenciais para Testes Rápidos
-
-* **Admin:** `admin@email.com` | Senha: `coxinha123`
-* **Clínica:** `ciaesorriso@gmail.com` | Senha: `admin`
-* **Médico:** `amandavirginia@gmail.com` | Senha: `admin`
-* **Paciente:** `severino@email.com` | Senha: `senhaForte123`
