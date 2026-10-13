@@ -1,8 +1,5 @@
 import { forwardRef } from 'react'
 
-/**
- * Select reutilizável com label e erro e alta fidelidade
- */
 const Select = forwardRef(function Select(
   { label, error, id, options = [], placeholder = 'Selecione', className = '', ...props },
   ref

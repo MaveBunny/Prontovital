@@ -1,32 +1,76 @@
 import api from './api'
 
-/**
- * POST /auth/login ou /api/auth/login 
- * @param {{ email: string, senha: string }} credentials
- * @returns {{ token: string, usuario: object }}
- */
-export async function login(credentials) {
-  try {
-    const { data } = await api.post('/auth/login', credentials)
-
-    if (data?.token) {
-      const usuarioComEmail = {
-        ...data.usuario,
-        email: data.usuario?.email || credentials.email
-      }
-      localStorage.setItem('@prontovital:token', data.token)
-      localStorage.setItem('@prontovital:user', JSON.stringify(usuarioComEmail))
-      return { ...data, usuario: usuarioComEmail }
-    }
-    throw new Error('Resposta de login inválida do servidor.')
-  } catch (error) {
-    throw error
-  }
+function extrairToken(data) {
+  if (!data || typeof data !== 'object') return null
+  return (
+    data.token ||
+    data.access_token ||
+    data.accessToken ||
+    data.jwt ||
+    data?.dados?.token ||
+    null
+  )
 }
 
-/**
- * PATCH /auth/:id/rec-senha
- */
+function extrairUsuario(data, fallbackEmail) {
+  if (!data || typeof data !== 'object') return null
+
+  const aninhado = data.usuario || data.user || data.User || data.dados?.usuario || data.dados?.user
+  if (aninhado && typeof aninhado === 'object') {
+    return {
+      ...aninhado,
+      email: aninhado.email || fallbackEmail || '',
+    }
+  }
+
+  if (data.perfil || data.tipo || data.role || data.nome || data.id || data.id_user) {
+    const { token: _t, access_token: _at, accessToken: _ac, jwt: _j, dados: _d, usuario: _u, user: _usr, ...resto } = data
+    return {
+      ...resto,
+      email: resto.email || fallbackEmail || '',
+    }
+  }
+
+  return null
+}
+
+export async function login(credentials) {
+  const loginId = String(credentials?.email ?? credentials?.loginId ?? '').trim()
+  const { senha } = credentials || {}
+
+  if (!loginId || !senha) {
+    throw new Error('Informe e-mail/CPF e senha.')
+  }
+
+  const payload = { email: loginId, senha }
+  if (!loginId.includes('@')) {
+    const soDigitos = loginId.replace(/\D/g, '')
+    if (soDigitos) payload.cpf = soDigitos
+  }
+
+  let data
+  try {
+    ;({ data } = await api.post('/auth/login', payload))
+  } catch (error) {
+    if (error?.response?.status === 404) {
+      ;({ data } = await api.post('/api/auth/login', payload))
+    } else {
+      throw error
+    }
+  }
+
+  const token = extrairToken(data)
+  const usuario = extrairUsuario(data, loginId.includes('@') ? loginId : undefined)
+
+  if (!token || !usuario) {
+    throw new Error('Resposta de login inválida do servidor.')
+  }
+
+  localStorage.setItem('@prontovital:token', token)
+  localStorage.setItem('@prontovital:user', JSON.stringify(usuario))
+  return { ...data, token, usuario }
+}
+
 export async function recuperarSenha(id, payload) {
   const { data } = await api
     .patch(`/auth/${id}/rec-senha`, payload)

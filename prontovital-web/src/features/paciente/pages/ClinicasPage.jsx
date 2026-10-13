@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listarClinicas, MOCK_CLINICAS } from '../../../lib/clinicasApi'
+import { listarClinicas } from '../../../lib/clinicasApi'
 
 export default function ClinicasPage() {
   const navigate = useNavigate()
-  const [clinicas, setClinicas] = useState(MOCK_CLINICAS)
+  const [clinicas, setClinicas] = useState([])
   const [busca, setBusca] = useState('')
   const [carregando, setCarregando] = useState(false)
+  const [erro, setErro] = useState('')
 
   useEffect(() => {
     async function carregar() {
       setCarregando(true)
+      setErro('')
       try {
         const dados = await listarClinicas()
-        if (dados && dados.length > 0) {
-          setClinicas(dados)
-        }
+        setClinicas(dados || [])
       } catch {
-        setClinicas(MOCK_CLINICAS)
+        setErro('Não foi possível carregar as clínicas do banco real.')
+        setClinicas([])
       } finally {
         setCarregando(false)
       }
@@ -36,8 +37,7 @@ export default function ClinicasPage() {
 
   return (
     <div className="p-6 md:p-10 lg:p-12 w-full animate-[fadeIn_0.3s_ease-out]">
-      
-      {/* ── Header ── */}
+
       <div className="mb-8">
         <h2 className="text-[26px] md:text-[30px] font-bold text-slate-900 tracking-tight">
           Clínicas
@@ -47,7 +47,6 @@ export default function ClinicasPage() {
         </p>
       </div>
 
-      {/* ── Barra de Busca ── */}
       <div className="mb-8 max-w-4xl">
         <div className="relative w-full">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -65,7 +64,6 @@ export default function ClinicasPage() {
         </div>
       </div>
 
-      {/* ── Grid de Clínicas ── */}
       {carregando ? (
         <div className="flex items-center justify-center py-20">
           <svg className="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
@@ -84,7 +82,7 @@ export default function ClinicasPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl">
           {clinicasFiltradas.map((clinica) => {
-            const qtdProf = clinica.totalProfissionais || (clinica.id === 1 ? 2 : 1)
+            const qtdProf = clinica.totalProfissionais || 0
             const labelProf = qtdProf === 1 ? '1 profissional >' : `${qtdProf} profissionais >`
 
             return (
@@ -93,7 +91,6 @@ export default function ClinicasPage() {
                 className="bg-white rounded-2xl border border-slate-200/90 hover:border-blue-300 hover:shadow-md transition-all p-6 flex flex-col justify-between group"
               >
                 <div>
-                  {/* Topo do Card: Ícone e Títulos */}
                   <div className="flex items-start gap-3.5 mb-4">
                     <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -110,7 +107,6 @@ export default function ClinicasPage() {
                     </div>
                   </div>
 
-                  {/* Tags de Especialidades */}
                   <div className="flex flex-wrap gap-2 mb-6">
                     {(clinica.especialidades || ['Clínica Geral']).map((esp) => (
                       <span
@@ -123,10 +119,9 @@ export default function ClinicasPage() {
                   </div>
                 </div>
 
-                {/* Rodapé do Card: Telefone e Link */}
                 <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
                   <span className="text-slate-500 font-medium">
-                    {clinica.telefone || '(81) 3333-0000'}
+                    {clinica.telefone || 'Não informado'}
                   </span>
                   <button
                     onClick={() => navigate('/paciente/profissionais')}

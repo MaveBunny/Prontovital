@@ -16,7 +16,7 @@ export default function PerfilClinicaPage() {
       try {
         const { data } = await api.get('/clinicas')
         if (Array.isArray(data)) {
-          const encontrada = data.find(c => 
+          const encontrada = data.find(c =>
             String(c.id_clinica) === String(idClinica) ||
             String(c.id_user) === String(idClinica) ||
             c.User?.nome?.trim().toLowerCase() === nomeClinica?.trim().toLowerCase()
@@ -44,8 +44,7 @@ export default function PerfilClinicaPage() {
 
   return (
     <div className="p-8 lg:p-12 w-full animate-[fadeIn_0.3s_ease-out] relative min-h-screen">
-      
-      {/* ── Header ── */}
+
       <div className="mb-10">
         <h2 className="text-[28px] font-bold text-slate-900 tracking-tight">Perfil da Clínica</h2>
         <p className="text-[15px] text-slate-500 mt-1">Informações cadastrais da clínica.</p>
@@ -54,10 +53,8 @@ export default function PerfilClinicaPage() {
       {loading ? (
         <div className="text-sm text-slate-500">Carregando perfil...</div>
       ) : (
-        /* ── Card de Perfil ── */
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm max-w-2xl overflow-hidden">
-          
-          {/* Cabeçalho do Card */}
+
           <div className="p-8 flex items-center gap-6">
             <div className="w-[72px] h-[72px] rounded-2xl bg-teal-50 flex items-center justify-center shrink-0">
               <svg className="w-8 h-8 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -70,13 +67,10 @@ export default function PerfilClinicaPage() {
             </div>
           </div>
 
-          {/* Divisor */}
           <div className="h-px bg-slate-100 mx-8"></div>
 
-          {/* Informações */}
           <div className="p-8 flex flex-col gap-6">
-            
-            {/* Item: Endereço */}
+
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center shrink-0 mt-0.5">
                 <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -90,7 +84,6 @@ export default function PerfilClinicaPage() {
               </div>
             </div>
 
-            {/* Item: Bairro */}
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center shrink-0 mt-0.5">
                 <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -104,7 +97,6 @@ export default function PerfilClinicaPage() {
               </div>
             </div>
 
-            {/* Item: Telefone */}
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center shrink-0 mt-0.5">
                 <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -117,7 +109,6 @@ export default function PerfilClinicaPage() {
               </div>
             </div>
 
-            {/* Item: E-mail */}
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center shrink-0 mt-0.5">
                 <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -134,7 +125,6 @@ export default function PerfilClinicaPage() {
         </div>
       )}
 
-      {/* Botão flutuante de ajuda */}
       <button className="fixed bottom-6 right-6 w-12 h-12 bg-slate-800 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-slate-900 transition-colors">
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />

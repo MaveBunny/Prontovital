@@ -40,8 +40,6 @@ const navItems = [
       </svg>
     ),
   },
-  // ── OCULTO (futuro, sem backend): Histórico de Triagens ──
-  // { to: '/paciente/historico-triagens', label: 'Histórico de Triagens', icon: (...) },
   {
     to: '/paciente/perfil',
     label: 'Meu Perfil',
@@ -88,8 +86,7 @@ export default function PacienteLayout() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row font-sans">
-      
-      {/* ── Topbar Mobile ── */}
+
       <header className="md:hidden bg-white border-b border-slate-200 px-4 py-3.5 flex items-center justify-between sticky top-0 z-40">
         <h1 className="text-xl font-bold tracking-tight text-slate-800">
           Pronto<span className="text-blue-600">Vital</span>
@@ -109,7 +106,6 @@ export default function PacienteLayout() {
         </button>
       </header>
 
-      {/* ── Menu Mobile Dropdown ── */}
       {menuAbertoMobile && (
         <div className="md:hidden fixed inset-x-0 top-[57px] bottom-0 bg-slate-900/40 z-30 backdrop-blur-xs" onClick={() => setMenuAbertoMobile(false)}>
           <div className="bg-white p-5 border-b border-slate-200 flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
@@ -153,17 +149,14 @@ export default function PacienteLayout() {
         </div>
       )}
 
-      {/* ── Sidebar Desktop ── */}
       <aside className="w-[260px] lg:w-[280px] bg-white border-r border-slate-200 hidden md:flex flex-col justify-between shrink-0 sticky top-0 h-screen">
         <div>
-          {/* Logo ProntoVital */}
           <div className="px-7 pt-7 pb-5">
             <h1 className="text-[22px] font-bold tracking-tight text-slate-900">
               Pronto<span className="text-blue-600">Vital</span>
             </h1>
           </div>
 
-          {/* User Badge */}
           <div className="px-6 py-4 mb-2">
             <div className="flex items-center gap-3 p-1">
               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0 shadow-xs">
@@ -177,7 +170,6 @@ export default function PacienteLayout() {
             </div>
           </div>
 
-          {/* Navigation Links */}
           <nav className="px-4 flex flex-col gap-1">
             {navItems.map((item) => (
               <NavLink
@@ -198,7 +190,6 @@ export default function PacienteLayout() {
           </nav>
         </div>
 
-        {/* Footer / Sair */}
         <div className="p-6 border-t border-slate-100">
           <button
             onClick={handleLogout}
@@ -212,7 +203,6 @@ export default function PacienteLayout() {
         </div>
       </aside>
 
-      {/* ── Main Content Area ── */}
       <main className="flex-1 w-full max-w-[1300px] overflow-y-auto min-h-[calc(100vh-57px)] md:min-h-screen">
         <Outlet />
       </main>

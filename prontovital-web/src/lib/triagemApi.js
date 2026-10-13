@@ -2,46 +2,15 @@ import api from './api'
 
 const STORAGE_KEY = '@prontovital:triagens'
 
-export const INITIAL_TRIAGENS = [
-  {
-    id: '1',
-    id_triagem: 1,
-    sintomas: 'Dor de cabeça',
-    especialidadeSugerida: 'Neurologia',
-    dataFormatada: '08/09/2026',
-    criadoEm: '2026-09-08T10:00:00Z',
-    duracao: '3 dias',
-    intensidade: 6,
-    status: 'concluido',
-    resumoIA:
-      'Paciente relata cefaleia persistente com intensidade moderada a forte. Ausência de sinais de alerta imediatos, mas recomenda-se investigação neurológica eletiva com especialista.',
-  },
-  {
-    id: '2',
-    id_triagem: 2,
-    sintomas: 'Tontura',
-    especialidadeSugerida: 'Neurologia',
-    dataFormatada: '22/08/2026',
-    criadoEm: '2026-08-22T14:30:00Z',
-    duracao: 'Recente',
-    intensidade: 7,
-    status: 'concluido',
-    resumoIA:
-      'Episódios de tontura e vertigem postural. Avaliação neurológica e labiríntica recomendada para descarte de vertigem posicional paroxística benigna ou causas centrais.',
-  },
-]
-
 function getLocalTriagens() {
   const data = localStorage.getItem(STORAGE_KEY)
-  if (data) {
-    try {
-      return JSON.parse(data)
-    } catch {
-      return INITIAL_TRIAGENS
-    }
+  if (!data) return []
+  try {
+    const parsed = JSON.parse(data)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_TRIAGENS))
-  return INITIAL_TRIAGENS
 }
 
 function saveLocalTriagens(list) {
@@ -62,7 +31,6 @@ export function deduzirEspecialidade(sintoma) {
   return 'Clínica Geral'
 }
 
-/** POST /api/triagens — Iniciar Pré-Triagem (paciente) */
 export async function iniciarTriagem(payload) {
   const especialidade = payload.especialidadeSugerida || deduzirEspecialidade(payload.sintomas)
   const resumoGerado =
@@ -109,7 +77,6 @@ export async function iniciarTriagem(payload) {
   }
 }
 
-/** GET /api/triagens — Histórico de Triagens (paciente) */
 export async function historicoTriagens() {
   try {
     const { data } = await api
@@ -121,7 +88,7 @@ export async function historicoTriagens() {
         const d = t.criadoEm || t.createdAt ? new Date(t.criadoEm || t.createdAt) : new Date()
         const dataFormatada = !isNaN(d.getTime())
           ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
-          : '08/09/2026'
+          : new Date().toLocaleDateString('pt-BR')
 
         const especialidade = t.especialidadeSugerida || deduzirEspecialidade(t.sintomas)
 
@@ -145,16 +112,9 @@ export async function historicoTriagens() {
   }
 }
 
-/** POST /api/triagens/:id/mensagens — Enviar Mensagem ao Chatbot */
 export async function enviarMensagem(id, payload) {
-  try {
-    const { data } = await api
-      .post(`/triagens/${id}/mensagens`, payload)
-      .catch(() => api.post(`/api/triagens/${id}/mensagens`, payload))
-    return data
-  } catch {
-    return {
-      resposta: `Recebemos sua resposta "${payload.mensagem}". Processando diagnóstico com IA...`,
-    }
-  }
+  const { data } = await api
+    .post(`/triagens/${id}/mensagens`, payload)
+    .catch(() => api.post(`/api/triagens/${id}/mensagens`, payload))
+  return data
 }

@@ -2,13 +2,7 @@ import api from './api'
 
 const STORAGE_KEY = '@prontovital:paciente_perfil'
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
 
-/**
- * Extrai id_user e id_paciente do usuário logado.
- * Backend POST /auth/login retorna: { id, nome, perfil, id_paciente? }
- * Também suporta formato aninhado Paciente/paciente (compat).
- */
 function getIdsLocais() {
   try {
     const raw = localStorage.getItem('@prontovital:user')
@@ -27,12 +21,6 @@ function getIdsLocais() {
   }
 }
 
-/**
- * Retorna perfil a partir do localStorage (fallback offline).
- * Contém SOMENTE campos existentes no backend:
- * User: nome, email, endereco, cidade, estado, telefone
- * Paciente: cpf, data_nascimento (YYYY-MM-DD), sexo, observacoes
- */
 export function getPerfilDinamico() {
   const userRaw = localStorage.getItem('@prontovital:user')
   let user = null
@@ -83,12 +71,6 @@ function saveLocalPerfil(perfil) {
   } catch {}
 }
 
-/**
- * Normaliza GET /pacientes/:id_paciente →
- * { id_paciente, cpf, data_nascimento, sexo, observacoes, id_user,
- *   User: { nome, email, endereco, cidade, estado, telefone } }
- * para o formato plano usado pelas telas.
- */
 function normalizarPacienteBackend(data) {
   if (!data) return null
   const user = data.User || data.user || {}
@@ -111,22 +93,12 @@ function normalizarPacienteBackend(data) {
   }
 }
 
-// ─── Funções exportadas ──────────────────────────────────────────────────────
 
-/**
- * POST /usuarios — Cadastrar novo Paciente.
- * Backend espera: { perfil: 'paciente', nome, email, senha, endereco,
- *   cidade, estado, telefone, paciente: { cpf, data_nascimento, sexo, observacoes } }
- */
 export async function cadastrarPaciente(payload) {
   const { data } = await api.post('/usuarios', payload)
   return data
 }
 
-/**
- * GET /pacientes/:id_paciente — Perfil do paciente (backend real).
- * Auth: perfil "paciente". Fallback: dados locais.
- */
 export async function meuPerfil() {
   const { id_paciente } = getIdsLocais()
   if (!id_paciente) return getPerfilDinamico()
@@ -139,17 +111,10 @@ export async function meuPerfil() {
       return normalizado
     }
   } catch {
-    // Backend indisponível — usa cache local
   }
   return getPerfilDinamico()
 }
 
-/**
- * PATCH /usuarios/perfil — Atualizar perfil (backend real).
- * Campos User permitidos: nome, email, senha, endereco, cidade, estado, telefone.
- * Campos Paciente permitidos: cpf, data_nascimento, sexo, observacoes.
- * Campos sem equivalente no backend (tipoSanguineo, alergias, etc.) são ignorados.
- */
 export async function editarPerfil(_id, payload = {}) {
   const body = {}
   for (const k of [
@@ -165,7 +130,6 @@ export async function editarPerfil(_id, payload = {}) {
   }
 
   const paciente = {}
-  // Aceita tanto plano quanto aninhado { paciente: {...} }
   const origem = payload.paciente || payload
   for (const k of ['cpf', 'data_nascimento', 'sexo', 'observacoes']) {
     if (origem[k] !== undefined && origem[k] !== '') paciente[k] = origem[k]
@@ -191,7 +155,6 @@ export async function editarPerfil(_id, payload = {}) {
     }
     return data
   } catch (err) {
-    // Fallback local — mantém compat sem quebrar a UI
     if (!err?.response) {
       const atual = getPerfilDinamico()
       const atualizado = {
@@ -207,10 +170,6 @@ export async function editarPerfil(_id, payload = {}) {
   }
 }
 
-/**
- * PATCH /usuarios/perfil/cancelar — Cancelar conta (soft delete ativo=false).
- * Sem body. Fallback: limpa cache local.
- */
 export async function deletarPerfil(_id) {
   try {
     const { data } = await api.patch('/usuarios/perfil/cancelar')

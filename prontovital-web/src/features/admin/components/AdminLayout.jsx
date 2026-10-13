@@ -46,8 +46,7 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row font-sans">
-      
-      {/* ── Mobile Header ── */}
+
       <header className="md:hidden bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-40">
         <h1 className="text-xl font-bold tracking-tight text-slate-800">
           Pronto<span className="text-blue-600">Vital</span>
@@ -63,28 +62,24 @@ export default function AdminLayout() {
         </button>
       </header>
 
-      {/* ── Mobile Overlay ── */}
       {mobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-900/50 z-40 md:hidden backdrop-blur-sm"
           onClick={closeMenu}
         />
       )}
 
-      {/* ── Sidebar Desktop / Mobile Drawer ── */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-[280px] bg-white border-r border-slate-200 flex flex-col justify-between transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
         mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        
+
         <div>
-          {/* Logo (Desktop Only) */}
           <div className="hidden md:block px-8 pt-8 pb-6 border-b border-slate-100">
             <h1 className="text-[22px] font-bold tracking-tight text-slate-800">
               Pronto<span className="text-blue-600">Vital</span>
             </h1>
           </div>
 
-          {/* User Badge */}
           <div className="px-6 py-6 border-b border-slate-100 bg-slate-50 md:bg-transparent">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center shrink-0">
@@ -98,7 +93,6 @@ export default function AdminLayout() {
             </div>
           </div>
 
-          {/* Navigation Links */}
           <nav className="p-4 flex flex-col gap-1.5 overflow-y-auto">
             {navItems.map((item) => (
               <NavLink
@@ -120,10 +114,9 @@ export default function AdminLayout() {
           </nav>
         </div>
 
-        {/* Footer / Sair */}
         <div className="p-6 border-t border-slate-100">
-          <button 
-            onClick={() => { logout(); navigate('/') }} 
+          <button
+            onClick={() => { logout(); navigate('/') }}
             className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-700 transition-colors w-full"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -134,7 +127,6 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* ── Main Content Area ── */}
       <main className="flex-1 w-full max-w-[1200px] mx-auto overflow-y-auto overflow-x-hidden md:p-0">
         <Outlet />
       </main>

@@ -1,6 +1,5 @@
 import api from './api'
 
-/** GET /profissionais — Buscar Profissionais reais da API */
 export async function buscarProfissionais(params = {}) {
   try {
     const { data } = await api.get('/profissionais', { params })
@@ -44,7 +43,6 @@ export async function buscarProfissionais(params = {}) {
   }
 }
 
-/** POST /usuarios - Cadastrar Profissional */
 export async function cadastrarProfissional(payload) {
   const { data } = await api.post('/usuarios', payload)
   return data

@@ -1,4 +1,3 @@
-/** Aplica máscara de CPF: 000.000.000-00 */
 export function mascaraCPF(value) {
   return value
     .replace(/\D/g, '')
@@ -8,12 +7,10 @@ export function mascaraCPF(value) {
     .slice(0, 14)
 }
 
-/** Remove formatação do CPF */
 export function limparCPF(value) {
   return value.replace(/\D/g, '')
 }
 
-/** Valida CPF */
 export function validarCPF(cpf) {
   const num = limparCPF(cpf)
   if (num.length !== 11 || /^(\d)\1{10}$/.test(num)) return false

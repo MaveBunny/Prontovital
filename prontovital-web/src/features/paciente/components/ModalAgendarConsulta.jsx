@@ -15,7 +15,6 @@ export default function ModalAgendarConsulta({
   const [dataConsulta, setDataConsulta] = useState(() => {
     const amanha = new Date()
     amanha.setDate(amanha.getDate() + 1)
-    // Se amanhã for sábado (6) ou domingo (0), avança para segunda-feira
     if (amanha.getDay() === 6) amanha.setDate(amanha.getDate() + 2)
     if (amanha.getDay() === 0) amanha.setDate(amanha.getDate() + 1)
     return amanha.toISOString().split('T')[0]
@@ -46,8 +45,8 @@ export default function ModalAgendarConsulta({
             id_profissional: p.id_profissional || p.id,
             nome: p.User?.nome || p.nome || 'Médico(a)',
             especialidade: p.Especialidade?.nome || p.especialidade || 'Clínica Geral',
-            clinica: clinicaObj?.User?.nome || p.clinica || 'Clínica Saúde Vital',
-            id_clinica: clinicaObj?.id_clinica || p.id_clinica || 1,
+            clinica: clinicaObj?.User?.nome || p.clinica || 'Sem clínica vinculada',
+            id_clinica: clinicaObj?.id_clinica || p.id_clinica || null,
             iniciais: (p.User?.nome || p.nome || 'DR')
               .split(' ')
               .filter(Boolean)
@@ -78,7 +77,6 @@ export default function ModalAgendarConsulta({
     lista[0] ||
     null
 
-  // Carrega horários disponíveis quando médico ou data mudarem
   useEffect(() => {
     const idProf = medico?.id_profissional || medico?.id || medicoId
     if (!idProf || !dataConsulta) return
@@ -120,6 +118,11 @@ export default function ModalAgendarConsulta({
       return
     }
 
+    if (!medico.id_clinica) {
+      setErro('Profissional sem clínica vinculada no banco real.')
+      return
+    }
+
     if (!horarioSelecionado) {
       setErro('Por favor, selecione um horário disponível.')
       return
@@ -130,7 +133,7 @@ export default function ModalAgendarConsulta({
     try {
       await agendarConsulta({
         id_profissional: medico.id_profissional || medico.id,
-        id_clinica: medico.id_clinica || 1,
+        id_clinica: medico.id_clinica,
         data_agendamento: dataConsulta,
         horario_agendamento: horarioSelecionado,
         observacao:
@@ -161,8 +164,7 @@ export default function ModalAgendarConsulta({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-[fadeIn_0.2s_ease-out]">
       <div className="bg-white w-full max-w-lg rounded-2xl p-6 shadow-2xl border border-slate-100 overflow-hidden animate-[zoomIn_0.2s_ease-out]">
-        
-        {/* Header */}
+
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <div>
             <h3 className="text-xl font-bold text-slate-900">Agendar Consulta</h3>
@@ -188,8 +190,7 @@ export default function ModalAgendarConsulta({
           </div>
         ) : (
           <form onSubmit={handleConfirmar} className="mt-5 space-y-4">
-            
-            {/* Profissional Card / Seleção */}
+
             {!medicoPreSelecionado ? (
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -228,7 +229,6 @@ export default function ModalAgendarConsulta({
               </div>
             )}
 
-            {/* Data e Horário */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -271,7 +271,6 @@ export default function ModalAgendarConsulta({
               </div>
             </div>
 
-            {/* Resumo ou Queixa */}
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Observação / Sintomas

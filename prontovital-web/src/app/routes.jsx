@@ -6,9 +6,6 @@ import PacienteRoutes from '../features/paciente/routes'
 import ProfissionalRoutes from '../features/profissional/routes'
 import { useAuth } from '../shared/hooks/useAuth'
 
-/**
- * Rota protegida — redireciona para / se não autenticado
- */
 function RotaProtegida({ children }) {
   const { autenticado } = useAuth()
   return autenticado ? children : <Navigate to="/" replace />
@@ -17,10 +14,8 @@ function RotaProtegida({ children }) {
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* ── Público ── */}
       <Route path="/" element={<RegisterPage />} />
 
-      {/* ── Paciente ── */}
       <Route
         path="/paciente/*"
         element={
@@ -30,7 +25,6 @@ export default function AppRoutes() {
         }
       />
 
-      {/* ── Profissional ── */}
       <Route
         path="/profissional/*"
         element={
@@ -40,7 +34,6 @@ export default function AppRoutes() {
         }
       />
 
-      {/* ── Clínica ── */}
       <Route
         path="/clinica/*"
         element={
@@ -50,7 +43,6 @@ export default function AppRoutes() {
         }
       />
 
-      {/* ── Admin ── */}
       <Route
         path="/admin/*"
         element={
@@ -60,10 +52,8 @@ export default function AppRoutes() {
         }
       />
 
-      {/* ── Redirecionamento legado da Triagem → Clínicas (Pré-Triagem oculta) ── */}
       <Route path="/triagem/*" element={<Navigate to="/paciente/clinicas" replace />} />
 
-      {/* ── Fallback ── */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

@@ -43,7 +43,7 @@ function generateMonthMatrix(year, month) {
   const matrix = []
   const firstDay = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0).getDate()
-  
+
   let firstDayOfWeek = firstDay.getDay()
   firstDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1
 
@@ -69,7 +69,7 @@ function generateMonthMatrix(year, month) {
 export default function AgendaPage() {
   const navigate = useNavigate()
   const { usuario } = useAuth()
-  const [visao, setVisao] = useState('semana') // 'semana' ou 'mes'
+  const [visao, setVisao] = useState('semana')
   const [agendamentos, setAgendamentos] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -147,7 +147,6 @@ export default function AgendaPage() {
     )
   }
 
-  // --- SEMANA ---
   const daysOfWeek = Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i))
   const weekEnd = daysOfWeek[6]
   const weekTitle = (() => {
@@ -161,7 +160,6 @@ export default function AgendaPage() {
     }
   })()
 
-  // --- MÊS ---
   const monthMatrix = generateMonthMatrix(monthDate.getFullYear(), monthDate.getMonth())
   const monthTitle = `${MESES_COMPLETOS[monthDate.getMonth()]} ${monthDate.getFullYear()}`
 
@@ -169,15 +167,13 @@ export default function AgendaPage() {
 
   return (
     <div className="p-8 lg:p-12 w-full animate-[fadeIn_0.3s_ease-out]">
-      
-      {/* ── Header ── */}
+
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-10">
         <div>
           <h2 className="text-[28px] font-bold text-slate-900 tracking-tight">Calendário</h2>
           <p className="text-[15px] text-slate-500 mt-1">Consultas agendadas pelos pacientes.</p>
         </div>
 
-        {/* Toggle Semana / Mês */}
         <div className="flex items-center bg-white border border-slate-200 rounded-full p-1 shadow-sm">
           <button
             onClick={() => setVisao('semana')}
@@ -198,7 +194,6 @@ export default function AgendaPage() {
         </div>
       </div>
 
-      {/* ── Navegação do Calendário ── */}
       <div className="flex items-center justify-between mb-4">
         <button onClick={goPrev} className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-xl shadow-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer font-bold">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -217,10 +212,8 @@ export default function AgendaPage() {
         </button>
       </div>
 
-      {/* ── Grid do Calendário ── */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[450px]">
-        
-        {/* Cabeçalho dos dias da semana */}
+
         <div className="grid grid-cols-7 border-b border-slate-200">
           {visao === 'semana' ? (
             daysOfWeek.map((dayDate, i) => {
@@ -259,15 +252,14 @@ export default function AgendaPage() {
           )}
         </div>
 
-        {/* Corpo do Calendário */}
         {visao === 'semana' ? (
           <div className="grid grid-cols-7 flex-1 min-h-[220px]">
             {daysOfWeek.map((dayDate, i) => {
               const active = isSameDay(dayDate, selectedDate)
               const ags = getAgendamentosDoDia(dayDate)
               return (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   onClick={() => setSelectedDate(dayDate)}
                   className={`border-r border-slate-100 last:border-r-0 p-2 cursor-pointer transition-colors ${
                     active ? 'bg-blue-50/30' : 'hover:bg-slate-50/50'
@@ -278,8 +270,8 @@ export default function AgendaPage() {
                       const idItem = ag.id_agendamento || ag.id
                       const nomePac = obterNomePaciente(ag)
                       return (
-                        <div 
-                          key={idItem} 
+                        <div
+                          key={idItem}
                           className="bg-blue-50 border border-blue-100 rounded-lg p-1.5 text-left"
                         >
                           <span className="block text-[11px] font-bold text-blue-700">
@@ -321,13 +313,12 @@ export default function AgendaPage() {
                               {dayDate.getDate()}
                             </span>
                           </div>
-                          
-                          {/* Badges de agendamentos reais do dia */}
+
                           {ags.length > 0 && (
                             <div className="mt-2 pl-1 flex flex-wrap gap-1">
                               {ags.slice(0, 3).map((ag) => (
-                                <span 
-                                  key={ag.id_agendamento || ag.id} 
+                                <span
+                                  key={ag.id_agendamento || ag.id}
                                   className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-semibold rounded"
                                 >
                                   {formatarHoraItem(ag)}
@@ -352,7 +343,6 @@ export default function AgendaPage() {
 
       </div>
 
-      {/* ── Consultas do Dia Selecionado ── */}
       <div className="mt-8">
         <h3 className="text-base font-bold text-slate-900 mb-4">
           Consultas em {selectedDate.toLocaleDateString('pt-BR')} ({agendamentosDiaSelecionado.length})
@@ -371,8 +361,8 @@ export default function AgendaPage() {
               const nomePac = obterNomePaciente(ag)
               const statusTexto = ag.status || 'Confirmado'
               return (
-                <div 
-                  key={idItem} 
+                <div
+                  key={idItem}
                   className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between shadow-sm"
                 >
                   <div>
@@ -384,8 +374,8 @@ export default function AgendaPage() {
                     </p>
                   </div>
                   <span className={`px-3 py-1 text-xs font-bold rounded-full capitalize ${
-                    statusTexto.toLowerCase() === 'cancelado' 
-                      ? 'bg-red-100 text-red-700' 
+                    statusTexto.toLowerCase() === 'cancelado'
+                      ? 'bg-red-100 text-red-700'
                       : statusTexto.toLowerCase() === 'concluido'
                         ? 'bg-blue-100 text-blue-700'
                         : 'bg-green-100 text-green-700'
@@ -398,8 +388,7 @@ export default function AgendaPage() {
           </div>
         )}
       </div>
-      
-      {/* Botão flutuante de ajuda */}
+
       <button className="fixed bottom-6 right-6 w-12 h-12 bg-slate-800 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-slate-900 transition-colors">
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />

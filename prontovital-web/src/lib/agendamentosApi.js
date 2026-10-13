@@ -1,8 +1,5 @@
 import api from './api'
 
-/**
- * Retorna o id_paciente do usuário autenticado a partir do localStorage ou do token JWT.
- */
 export function getIdPacienteLocal() {
   try {
     const raw = localStorage.getItem('@prontovital:user')
@@ -29,12 +26,9 @@ export function getIdPacienteLocal() {
   }
 }
 
-/**
- * Normaliza um agendamento retornado pelo backend (GET /pacientes/:id/agendamentos).
- */
 export function normalizarAgendamento(a, index = 0) {
-  const dataStr = a.data_agendamento // "YYYY-MM-DD"
-  const horaStr = a.horario_agendamento // "HH:mm:ss"
+  const dataStr = a.data_agendamento
+  const horaStr = a.horario_agendamento
   let dataFormatada = '—'
   let dataHoraISO = null
 
@@ -96,10 +90,6 @@ export function normalizarAgendamento(a, index = 0) {
   }
 }
 
-/**
- * GET /pacientes/:id_paciente/agendamentos
- * Retorna todos os agendamentos reais do paciente logado.
- */
 export async function meusAgendamentos() {
   const id_paciente = getIdPacienteLocal()
 
@@ -122,10 +112,6 @@ export async function meusAgendamentos() {
   }
 }
 
-/**
- * PATCH /pacientes/:id_paciente/agendamentos/:id_agendamento/cancelar
- * Cancela um agendamento do paciente logado na API real.
- */
 export async function cancelarConsulta(id_agendamento) {
   const id_paciente = getIdPacienteLocal()
 
@@ -139,9 +125,6 @@ export async function cancelarConsulta(id_agendamento) {
   return data
 }
 
-/**
- * POST /profissionais/:id_profissional/agendamentos — Criar agendamento real
- */
 export async function agendarConsulta(payload) {
   const id_paciente = getIdPacienteLocal()
   const id_profissional = payload.id_profissional
@@ -162,11 +145,15 @@ export async function agendarConsulta(payload) {
   const observacaoFinal =
     payload.observacao || payload.resumoTriagem || payload.obvervacao || null
 
+  if (!payload?.id_clinica) {
+    throw new Error('Clínica do atendimento não identificada.')
+  }
+
   const { data } = await api.post(
     `/profissionais/${id_profissional}/agendamentos`,
     {
       id_paciente: Number(id_paciente),
-      id_clinica: Number(payload.id_clinica || 1),
+      id_clinica: Number(payload.id_clinica),
       data_agendamento: dataAgendamento,
       horario_agendamento: horarioAgendamento,
       observacao: observacaoFinal,

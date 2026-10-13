@@ -8,17 +8,14 @@ export default function MeuPerfilPage() {
   const { usuario, logout } = useAuth()
   const navigate = useNavigate()
 
-  // Perfil completo — GET /pacientes/:id_paciente (backend real)
   const { paciente, carregando } = usePaciente()
 
   const [modalExcluir, setModalExcluir] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
   const [erro, setErro] = useState('')
 
-  // Dados reais retornados pelo backend (User + Paciente)
   const perfil = paciente || {}
 
-  // ── Campos reais do backend (User + Paciente) ──────────────────────────
   const nomeExibicao = perfil.nome || usuario?.nome || '—'
   const emailExibicao = perfil.email || usuario?.email || '—'
   const cpfExibicao = perfil.cpf || '—'
@@ -30,7 +27,6 @@ export default function MeuPerfilPage() {
       : perfil.cidade || perfil.estado || '—'
   const sexoExibicao = perfil.sexo || '—'
 
-  // Formata data de nascimento de "YYYY-MM-DD" para "DD/MM/AAAA"
   const dataNascExibicao = perfil.data_nascimento
     ? (() => {
         const [ano, mes, dia] = perfil.data_nascimento.split('T')[0].split('-')
@@ -38,7 +34,6 @@ export default function MeuPerfilPage() {
       })()
     : '—'
 
-  // ── Campo clínico real do backend (Paciente.observacoes) ─────────────────
   const observacoesExibicao = perfil.observacoes || '—'
 
   const iniciais = nomeExibicao
@@ -53,7 +48,6 @@ export default function MeuPerfilPage() {
     setExcluindo(true)
     setErro('')
     try {
-      // PATCH /usuarios/perfil/cancelar — desativa a conta (ativo = false)
       await deletarPerfil(perfil.id_user || usuario?.id_user)
       logout()
       navigate('/')
@@ -66,8 +60,7 @@ export default function MeuPerfilPage() {
 
   return (
     <div className="p-6 md:p-10 lg:p-12 w-full max-w-2xl animate-[fadeIn_0.3s_ease-out]">
-      
-      {/* ── Carregando perfil do backend ── */}
+
       {carregando && !paciente && (
         <div className="flex items-center justify-center py-20">
           <svg className="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
@@ -79,10 +72,8 @@ export default function MeuPerfilPage() {
 
       {!carregando && (
       <>
-      {/* ── Card Principal do Perfil (conforme Imagem 2) ── */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-6 md:p-8 mb-6">
-        
-        {/* Header do Usuário: Avatar, Nome, Papel + Editar */}
+
         <div className="flex items-center gap-4 mb-6">
           <div className="w-14 h-14 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
             {iniciais}
@@ -107,10 +98,8 @@ export default function MeuPerfilPage() {
           </button>
         </div>
 
-        {/* Divisor */}
         <div className="border-t border-slate-100 my-5" />
 
-        {/* Dados Cadastrais — campos reais do backend (User + Paciente) */}
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -152,10 +141,8 @@ export default function MeuPerfilPage() {
           )}
         </div>
 
-        {/* Divisor */}
         <div className="border-t border-slate-100 my-5" />
 
-        {/* Seção Observações clínicas (campo real do backend) */}
         <div>
           <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4">
             OBSERVAÇÕES CLÍNICAS
@@ -175,7 +162,6 @@ export default function MeuPerfilPage() {
 
       </div>
 
-      {/* ── Card: Zona de Risco (conforme Imagem 2) ── */}
       <div className="bg-rose-50/40 border border-rose-200/80 rounded-2xl p-6">
         <h3 className="text-xs font-bold text-rose-600 uppercase tracking-wider mb-1">
           ZONA DE RISCO
@@ -198,7 +184,6 @@ export default function MeuPerfilPage() {
         </button>
       </div>
 
-      {/* ── Modal de Confirmação de Exclusão ── */}
       {modalExcluir && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-[fadeIn_0.2s_ease-out]">
           <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl border border-slate-100 animate-[zoomIn_0.2s_ease-out]">

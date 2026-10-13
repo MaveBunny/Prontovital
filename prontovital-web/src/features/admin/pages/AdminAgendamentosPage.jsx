@@ -5,17 +5,14 @@ export default function AdminAgendamentosPage() {
   const [loading, setLoading] = useState(true)
   const [erro, setErro] = useState('')
   const [agendamentos, setAgendamentos] = useState([])
-  
-  // Filtros (Figma)
+
   const [busca, setBusca] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('Todos os status')
 
-  // Estados do Modal de Exclusão / Cancelamento
   const [modalAberto, setModalAberto] = useState(false)
   const [agendamentoParaExcluir, setAgendamentoParaExcluir] = useState(null)
   const [excluindo, setExcluindo] = useState(false)
 
-  // Estados do Modal de Novo Agendamento (Recurso Admin habilitado na API)
   const [modalNovoAberto, setModalNovoAberto] = useState(false)
   const [pacientes, setPacientes] = useState([])
   const [profissionais, setProfissionais] = useState([])
@@ -50,17 +47,14 @@ export default function AdminAgendamentosPage() {
           const especialidade = item.Profissional?.Especialidade?.nome || ''
           const subInfo = especialidade ? `${nomeProfissional} · ${especialidade}` : nomeProfissional
 
-          // Formata data AAAA-MM-DD para DD/MM/AAAA
           let dataFormatada = item.data_agendamento || ''
           if (dataFormatada.includes('-')) {
             const [ano, mes, dia] = dataFormatada.split('-')
             dataFormatada = `${dia}/${mes}/${ano}`
           }
 
-          // Horário corta os segundos HH:MM
           const horarioFormatado = item.horario_agendamento?.substring(0, 5) || '--:--'
 
-          // Status primeira letra maiúscula
           const statusOriginal = item.status || 'Confirmado'
           const statusFormatado = statusOriginal.charAt(0).toUpperCase() + statusOriginal.slice(1).toLowerCase()
 
@@ -88,7 +82,6 @@ export default function AdminAgendamentosPage() {
     }
   }
 
-  // Abre Modal de Cancelamento
   function openDeleteModal(item) {
     setAgendamentoParaExcluir(item)
     setModalAberto(true)
@@ -102,12 +95,12 @@ export default function AdminAgendamentosPage() {
   async function confirmDelete() {
     if (!agendamentoParaExcluir) return
     setExcluindo(true)
-    
+
     try {
       if (agendamentoParaExcluir.id_paciente && agendamentoParaExcluir.id_agendamento) {
         await api.patch(`/pacientes/${agendamentoParaExcluir.id_paciente}/agendamentos/${agendamentoParaExcluir.id_agendamento}/cancelar`)
       }
-      setAgendamentos(prev => prev.map(a => 
+      setAgendamentos(prev => prev.map(a =>
         a.id === agendamentoParaExcluir.id ? { ...a, status: 'Cancelado' } : a
       ))
       closeDeleteModal()
@@ -120,7 +113,6 @@ export default function AdminAgendamentosPage() {
     }
   }
 
-  // ─── Modal de Novo Agendamento ───
   async function abrirModalNovo() {
     setErroNovo('')
 
@@ -140,7 +132,6 @@ export default function AdminAgendamentosPage() {
     setModalNovoAberto(true)
 
     try {
-      // Busca pacientes, profissionais e todas as clínicas do sistema
       const [resPacientes, resProfissionais, resClinicas] = await Promise.all([
         api.get('/pacientes'),
         api.get('/profissionais'),
@@ -245,7 +236,6 @@ export default function AdminAgendamentosPage() {
     }
 
     try {
-      // Garante que o profissional está vinculado à clínica selecionada
       const prof = profissionais.find(p => String(p.id_profissional) === String(formNovo.id_profissional))
       const jaVinculado = prof?.Clinicas?.some(c => String(c.id_clinica) === String(formNovo.id_clinica))
       if (!jaVinculado) {
@@ -294,8 +284,7 @@ export default function AdminAgendamentosPage() {
   return (
     <>
       <div className="p-4 sm:p-6 md:p-8 lg:p-12 w-full animate-[fadeIn_0.3s_ease-out]">
-        
-        {/* ── Header ── */}
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
           <div>
             <h2 className="text-[24px] sm:text-[28px] font-bold text-slate-900 tracking-tight">Todos os Agendamentos</h2>
@@ -318,7 +307,6 @@ export default function AdminAgendamentosPage() {
           </div>
         )}
 
-        {/* ── Filtros (Figma: Busca + Todos os status) ── */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
           <div className="relative flex-1 w-full">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -348,7 +336,6 @@ export default function AdminAgendamentosPage() {
           </select>
         </div>
 
-        {/* ── Lista de Agendamentos ── */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -357,7 +344,7 @@ export default function AdminAgendamentosPage() {
           <div className="flex flex-col gap-4">
             {agendamentos.filter((item) => {
               const termo = busca.toLowerCase()
-              const matchBusca = 
+              const matchBusca =
                 item.paciente.toLowerCase().includes(termo) ||
                 item.profissional.toLowerCase().includes(termo)
               const matchStatus = filtroStatus === 'Todos os status' || item.status.toLowerCase() === filtroStatus.toLowerCase()
@@ -366,19 +353,18 @@ export default function AdminAgendamentosPage() {
               agendamentos
                 .filter((item) => {
                   const termo = busca.toLowerCase()
-                  const matchBusca = 
+                  const matchBusca =
                     item.paciente.toLowerCase().includes(termo) ||
                     item.profissional.toLowerCase().includes(termo)
                   const matchStatus = filtroStatus === 'Todos os status' || item.status.toLowerCase() === filtroStatus.toLowerCase()
                   return matchBusca && matchStatus
                 })
                 .map((item) => (
-                <div 
-                  key={item.id} 
+                <div
+                  key={item.id}
                   className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 hover:shadow-md transition-shadow overflow-hidden"
                 >
-                  
-                  {/* Lado Esquerdo: Paciente e Profissional */}
+
                   <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                     <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
                       <span className="text-[13px] sm:text-[14px] font-bold text-blue-600">
@@ -404,18 +390,17 @@ export default function AdminAgendamentosPage() {
                     </div>
                   </div>
 
-                  {/* Lado Direito: Data, Status e Ação */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between md:justify-end gap-3 sm:gap-6 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                     <div className="text-[13px] sm:text-[14px] text-slate-600 font-medium">
                       {item.data} - {item.horario}
                     </div>
-                    
+
                     <div className="flex items-center gap-3 sm:gap-4 justify-between sm:justify-start">
                       <span className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-[12px] font-bold uppercase tracking-wider ${getStatusColor(item.status)}`}>
                         {item.status}
                       </span>
-                      
-                      <button 
+
+                      <button
                         onClick={() => openDeleteModal(item)}
                         className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
                         title="Cancelar Agendamento"
@@ -438,10 +423,9 @@ export default function AdminAgendamentosPage() {
         )}
       </div>
 
-      {/* ── Modal de Cancelamento ── */}
       {modalAberto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-          <div 
+          <div
             className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-[zoomIn_0.2s_ease-out]"
             onClick={(e) => e.stopPropagation()}
           >
@@ -450,7 +434,7 @@ export default function AdminAgendamentosPage() {
               <p className="text-sm text-slate-500 mb-8 leading-relaxed">
                 Tem certeza que deseja cancelar o agendamento de <span className="font-semibold text-slate-800">{agendamentoParaExcluir?.paciente}</span>? O status passará para "Cancelado".
               </p>
-              
+
               <div className="flex flex-col-reverse sm:flex-row items-center justify-center gap-3">
                 <button
                   onClick={closeDeleteModal}
@@ -481,10 +465,9 @@ export default function AdminAgendamentosPage() {
         </div>
       )}
 
-      {/* ── Modal de Novo Agendamento (Admin) ── */}
       {modalNovoAberto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-          <div 
+          <div
             className="bg-white w-full max-w-xl rounded-2xl shadow-xl overflow-hidden animate-[zoomIn_0.2s_ease-out] max-h-[90vh] overflow-y-auto border border-slate-200"
             onClick={(e) => e.stopPropagation()}
           >
@@ -509,8 +492,7 @@ export default function AdminAgendamentosPage() {
               )}
 
               <form onSubmit={handleSalvarNovoAgendamento} className="flex flex-col gap-4">
-                
-                {/* Paciente */}
+
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
                     Paciente
@@ -536,7 +518,6 @@ export default function AdminAgendamentosPage() {
                   </select>
                 </div>
 
-                {/* Médico / Profissional */}
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
                     Profissional de Saúde
@@ -559,7 +540,6 @@ export default function AdminAgendamentosPage() {
                   </select>
                 </div>
 
-                {/* Clínica do Atendimento (Lista todas as clínicas do sistema) */}
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
                     Clínica do Atendimento
@@ -582,7 +562,6 @@ export default function AdminAgendamentosPage() {
                   </select>
                 </div>
 
-                {/* Data e Horário */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
@@ -623,7 +602,6 @@ export default function AdminAgendamentosPage() {
                   </div>
                 </div>
 
-                {/* Observações */}
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
                     Observações Clínicas
@@ -637,7 +615,6 @@ export default function AdminAgendamentosPage() {
                   />
                 </div>
 
-                {/* Botões */}
                 <div className="flex items-center gap-3 pt-3">
                   <button
                     type="button"

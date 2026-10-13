@@ -9,7 +9,6 @@ import { cadastrarProfissional } from "../../../lib/profissionaisApi";
 import { mascaraCPF } from "../../../shared/utils/cpfMask";
 import LoginPage from "./LoginPage";
 
-// ─── Constantes ───────────────────────────────────────────────────────────────
 
 const TIPOS = [
   {
@@ -46,7 +45,6 @@ const TIPOS_SANGUINEOS = [
   { value: "O-", label: "O-" },
 ];
 
-// ─── Ícones das features ──────────────────────────────────────────────────────
 
 function IconeTriagem() {
   return (
@@ -102,12 +100,10 @@ function IconeRede() {
   );
 }
 
-// ─── Painel Esquerdo ──────────────────────────────────────────────────────────
 
 function PainelEsquerdo() {
   return (
     <div className="hidden lg:flex lg:w-[45%] xl:w-[42%] bg-[#1B2438] text-white flex-col justify-between p-10 xl:p-14 min-h-screen rounded-r-3xl">
-      {/* Logo */}
       <div>
         <div className="mb-16">
           <h2 className="text-xl font-bold tracking-tight">
@@ -118,7 +114,6 @@ function PainelEsquerdo() {
           </p>
         </div>
 
-        {/* Headline */}
         <div className="mb-10">
           <h1 className="text-3xl xl:text-4xl font-extrabold leading-tight tracking-tight">
             Do primeiro sintoma ao atendimento.
@@ -130,7 +125,6 @@ function PainelEsquerdo() {
           </p>
         </div>
 
-        {/* Features */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
@@ -159,7 +153,6 @@ function PainelEsquerdo() {
         </div>
       </div>
 
-      {/* Footer */}
       <div className="pt-10">
         <div className="border-t border-white/10 pt-6">
           <p className="text-xs text-slate-500">
@@ -171,7 +164,6 @@ function PainelEsquerdo() {
   );
 }
 
-// ─── Subcomponentes ───────────────────────────────────────────────────────────
 
 function BotaoVoltar({ onVoltar, tipo }) {
   return (
@@ -234,8 +226,6 @@ function FormPaciente({ onSuccess }) {
     e.preventDefault();
     setLoading(true);
     try {
-      // Backend espera data_nascimento em "AAAA-MM-DD".
-      // Aceita "DD/MM/AAAA" digitado e converte; se já vier ISO, mantém.
       let dataNasc = form.data_nascimento.trim();
       const m = dataNasc.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
       if (m) dataNasc = `${m[3]}-${m[2]}-${m[1]}`;
@@ -435,7 +425,6 @@ function MensagemEmBreve({ mensagem, detalhe }) {
   );
 }
 
-// ─── RegisterPage — Container principal da autenticação ───────────────────────
 
 export default function RegisterPage() {
   const [aba, setAba] = useState("entrar");
@@ -456,12 +445,9 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-row">
-      {/* ── Painel Esquerdo (desktop) ── */}
       <PainelEsquerdo />
 
-      {/* ── Painel Direito ── */}
       <div className="flex-1 flex flex-col">
-        {/* Header mobile — visível apenas em telas pequenas */}
         <div className="lg:hidden px-6 pt-10 pb-4 bg-[#1B2438] text-white">
           <h2 className="text-lg font-bold tracking-tight">
             Pronto<span className="text-blue-400">Vital</span>
@@ -479,10 +465,8 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        {/* Card de formulário */}
         <div className="flex-1 flex items-start lg:items-center justify-center px-4 py-8 lg:px-12 lg:py-0">
           <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden lg:my-8">
-            {/* Abas */}
             <div className="flex border-b border-slate-100">
               {[
                 { id: "entrar", label: "Entrar" },
@@ -503,10 +487,8 @@ export default function RegisterPage() {
             </div>
 
             <div className="px-6 py-6 max-h-[70vh] overflow-y-auto">
-              {/* ── ABA ENTRAR ── */}
               {aba === "entrar" && <LoginPage />}
 
-              {/* ── ABA CADASTRAR: seleção de tipo ── */}
               {aba === "cadastrar" && !tipoSelecionado && (
                 <div className="flex flex-col gap-3">
                   <p className="text-sm text-slate-500 mb-1">
@@ -547,7 +529,6 @@ export default function RegisterPage() {
                 </div>
               )}
 
-              {/* ── ABA CADASTRAR: formulário do tipo selecionado ── */}
               {aba === "cadastrar" && tipoSelecionado && tipo && (
                 <div>
                   <BotaoVoltar
@@ -556,12 +537,6 @@ export default function RegisterPage() {
                   />
                   {tipoSelecionado === "paciente" && (
                     <FormPaciente onSuccess={handleSucessoCadastro} />
-                  )}
-                  {tipoSelecionado === "profissional" && (
-                    <FormProfissional onSuccess={handleSucessoCadastro} />
-                  )}
-                  {tipoSelecionado === "clinica" && (
-                    <FormClinica onSuccess={handleSucessoCadastro} />
                   )}
                 </div>
               )}

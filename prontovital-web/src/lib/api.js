@@ -1,11 +1,19 @@
 import axios from 'axios'
 
+function normalizarBaseUrl(url) {
+  if (!url) return url
+  const semBarra = url.trim().replace(/\/+$/, '')
+  if (!/^https?:\/\//i.test(semBarra)) {
+    return `https://${semBarra}`
+  }
+  return semBarra
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: normalizarBaseUrl(import.meta.env.VITE_API_URL),
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Interceptor: injeta token JWT em todas as requisições autenticadas
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('@prontovital:token')
   if (token) {
@@ -14,9 +22,6 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Interceptor: redireciona para login se token expirar
-// (não deve disparar na própria requisição de login — erro 401 de
-// credenciais inválidas precisa chegar ao formulário)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
