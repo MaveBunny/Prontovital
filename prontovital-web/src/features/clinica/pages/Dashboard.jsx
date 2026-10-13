@@ -26,11 +26,10 @@ export default function ClinicaDashboard() {
           <h1 className="text-xl font-bold text-slate-800">{nome} 🏥</h1>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {[
             { label: 'Profissionais', valor: '0', cor: 'bg-blue-50 text-blue-700' },
             { label: 'Consultas hoje', valor: '0', cor: 'bg-green-50 text-green-700' },
-            { label: 'Especialidades', valor: '0', cor: 'bg-purple-50 text-purple-700' },
             { label: 'Avaliação', valor: '—', cor: 'bg-yellow-50 text-yellow-700' },
           ].map((s) => (
             <div key={s.label} className={`${s.cor} rounded-2xl p-4`}>

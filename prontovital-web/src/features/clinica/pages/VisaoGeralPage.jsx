@@ -1,8 +1,113 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../../shared/hooks/useAuth'
+import api from '../../../lib/api'
 
 export default function VisaoGeralPage() {
   const { usuario } = useAuth()
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    hoje: 0,
+    medicos: 0,
+    confirmados: 0,
+    total: 0
+  })
+  const [recentes, setRecentes] = useState([])
+
+  const idClinica = usuario?.id_clinica || usuario?.id || usuario?.id_user
+  const nomeClinica = usuario?.nome || 'Clínica'
+
+  useEffect(() => {
+    async function carregarDados() {
+      setLoading(true)
+      try {
+        // 1. Busca agendamentos da clínica
+        let agendamentosData = []
+        if (idClinica) {
+          try {
+            const { data } = await api.get(`/clinicas/${idClinica}/agendamentos`)
+            if (Array.isArray(data)) {
+              agendamentosData = data
+            }
+          } catch (e) {
+            console.error('Erro ao buscar agendamentos:', e)
+          }
+        }
+
+        // 2. Busca profissionais da clínica
+        let totalMedicos = 0
+        try {
+          const { data: profissionais } = await api.get('/profissionais')
+          if (Array.isArray(profissionais)) {
+            const vinculados = profissionais.filter((p) =>
+              p.Clinicas?.some((c) => String(c.id_clinica) === String(idClinica) || c.User?.nome?.trim() === nomeClinica.trim())
+            )
+            totalMedicos = vinculados.length
+          }
+        } catch (e) {
+          console.error('Erro ao buscar profissionais:', e)
+        }
+
+        // Cálculos
+        const hojeIso = new Date().toISOString().split('T')[0]
+        const agendamentosHoje = agendamentosData.filter(a => a.data_agendamento === hojeIso).length
+        const totalConfirmados = agendamentosData.filter(a => a.status?.toLowerCase() === 'confirmado').length
+
+        setStats({
+          hoje: agendamentosHoje,
+          medicos: totalMedicos,
+          confirmados: totalConfirmados,
+          total: agendamentosData.length
+        })
+
+        // Formata os mais recentes
+        const formatados = agendamentosData.slice(0, 5).map((item) => {
+          const nomePaciente = item.Paciente?.User?.nome || 'Paciente'
+          const partes = nomePaciente.trim().split(' ')
+          const iniciais = partes.length >= 2 
+            ? (partes[0][0] + partes[1][0]).toUpperCase()
+            : nomePaciente.substring(0, 2).toUpperCase()
+
+          let dataFormatada = item.data_agendamento || ''
+          if (dataFormatada.includes('-')) {
+            const [ano, mes, dia] = dataFormatada.split('-')
+            dataFormatada = `${dia}/${mes}/${ano}`
+          }
+          const horarioFormatado = item.horario_agendamento?.substring(0, 5) || '--:--'
+
+          const statusNormalizado = item.status?.toLowerCase() || 'confirmado'
+          let statusStyle = 'bg-slate-100 text-slate-700'
+          let statusTexto = 'Pendente'
+
+          if (statusNormalizado === 'confirmado') {
+            statusStyle = 'bg-green-100 text-green-700'
+            statusTexto = 'Confirmado'
+          } else if (statusNormalizado === 'concluido' || statusNormalizado === 'concluído') {
+            statusStyle = 'bg-blue-100 text-blue-700'
+            statusTexto = 'Concluído'
+          } else if (statusNormalizado === 'cancelado') {
+            statusStyle = 'bg-red-100 text-red-700'
+            statusTexto = 'Cancelado'
+          }
+
+          return {
+            id: item.id_agendamento,
+            iniciais,
+            paciente: nomePaciente,
+            medico: item.Profissional?.User?.nome || 'Médico(a)',
+            data: `${dataFormatada} às ${horarioFormatado}`,
+            status: statusTexto,
+            statusStyle
+          }
+        })
+
+        setRecentes(formatados)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    carregarDados()
+  }, [idClinica, nomeClinica])
 
   return (
     <div className="p-8 lg:p-12 w-full animate-[fadeIn_0.3s_ease-out]">
@@ -23,7 +128,7 @@ export default function VisaoGeralPage() {
             </svg>
           </div>
           <div className="mt-4">
-            <h3 className="text-3xl font-bold text-slate-900 leading-none">0</h3>
+            <h3 className="text-3xl font-bold text-slate-900 leading-none">{loading ? '-' : stats.hoje}</h3>
             <p className="text-[13px] text-slate-500 font-medium mt-1.5">Agendamentos hoje</p>
           </div>
         </div>
@@ -35,7 +140,7 @@ export default function VisaoGeralPage() {
             </svg>
           </div>
           <div className="mt-4">
-            <h3 className="text-3xl font-bold text-slate-900 leading-none">2</h3>
+            <h3 className="text-3xl font-bold text-slate-900 leading-none">{loading ? '-' : stats.medicos}</h3>
             <p className="text-[13px] text-slate-500 font-medium mt-1.5">Médicos vinculados</p>
           </div>
         </div>
@@ -47,7 +152,7 @@ export default function VisaoGeralPage() {
             </svg>
           </div>
           <div className="mt-4">
-            <h3 className="text-3xl font-bold text-slate-900 leading-none">2</h3>
+            <h3 className="text-3xl font-bold text-slate-900 leading-none">{loading ? '-' : stats.confirmados}</h3>
             <p className="text-[13px] text-slate-500 font-medium mt-1.5">Confirmados</p>
           </div>
         </div>
@@ -59,7 +164,7 @@ export default function VisaoGeralPage() {
             </svg>
           </div>
           <div className="mt-4">
-            <h3 className="text-3xl font-bold text-slate-900 leading-none">3</h3>
+            <h3 className="text-3xl font-bold text-slate-900 leading-none">{loading ? '-' : stats.total}</h3>
             <p className="text-[13px] text-slate-500 font-medium mt-1.5">Total no período</p>
           </div>
         </div>
@@ -71,52 +176,30 @@ export default function VisaoGeralPage() {
         <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Agendamentos Recentes</h3>
         
         <div className="flex flex-col gap-3">
-          
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-11 h-11 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                <span className="text-sm font-bold tracking-wider">JP</span>
-              </div>
-              <div>
-                <p className="text-[15px] font-bold text-slate-900">João Pedro Alves</p>
-                <p className="text-[13px] text-slate-500 mt-0.5">Dra. Camila Lins · 15/09/2026 às 09:00</p>
-              </div>
+          {loading ? (
+            <div className="text-sm text-slate-400 py-4">Carregando agendamentos...</div>
+          ) : recentes.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 text-center text-sm text-slate-500">
+              Nenhum agendamento registrado até o momento.
             </div>
-            <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
-              Confirmado
-            </span>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-11 h-11 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                <span className="text-sm font-bold tracking-wider">MD</span>
+          ) : (
+            recentes.map((item) => (
+              <div key={item.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-11 h-11 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                    <span className="text-sm font-bold tracking-wider">{item.iniciais}</span>
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-bold text-slate-900">{item.paciente}</p>
+                    <p className="text-[13px] text-slate-500 mt-0.5">{item.medico} · {item.data}</p>
+                  </div>
+                </div>
+                <span className={`px-3 py-1 text-xs font-bold rounded-full ${item.statusStyle}`}>
+                  {item.status}
+                </span>
               </div>
-              <div>
-                <p className="text-[15px] font-bold text-slate-900">Maria das Graças Lima</p>
-                <p className="text-[13px] text-slate-500 mt-0.5">Dra. Camila Lins · 15/09/2026 às 08:00</p>
-              </div>
-            </div>
-            <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
-              Confirmado
-            </span>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-11 h-11 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                <span className="text-sm font-bold tracking-wider">SC</span>
-              </div>
-              <div>
-                <p className="text-[15px] font-bold text-slate-900">Severino Cavalcanti</p>
-                <p className="text-[13px] text-slate-500 mt-0.5">Dra. Camila Lins · 15/08/2026 às 14:00</p>
-              </div>
-            </div>
-            <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
-              Concluído
-            </span>
-          </div>
-
+            ))
+          )}
         </div>
       </div>
       

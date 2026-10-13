@@ -1,18 +1,16 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useAuth } from '../../../shared/hooks/useAuth'
+import api from '../../../lib/api'
 
-const MEDICOS_MOCK = [
-  { id: 1, nome: 'Dra. Camila Lins' },
-  { id: 2, nome: 'Dra. Ana Beatriz Sousa' }
+const DIAS_SEMANA_NOMES = [
+  'Domingo',
+  'Segunda-feira',
+  'Terça-feira',
+  'Quarta-feira',
+  'Quinta-feira',
+  'Sexta-feira',
+  'Sábado'
 ]
-
-const HORARIOS_INICIAIS = [
-  { id: 1, medicoId: 2, dia: 'Segunda-feira', inicio: '10:00', fim: '16:00', ativo: true },
-  { id: 2, medicoId: 2, dia: 'Terça-feira', inicio: '08:00', fim: '13:00', ativo: true },
-  { id: 3, medicoId: 2, dia: 'Quinta-feira', inicio: '14:00', fim: '18:00', ativo: true },
-  { id: 4, medicoId: 1, dia: 'Segunda-feira', inicio: '08:00', fim: '12:00', ativo: true },
-]
-
-const DIAS_SEMANA = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo']
 
 const HORARIOS_OPCOES = [
   '07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', 
@@ -22,31 +20,125 @@ const HORARIOS_OPCOES = [
 ]
 
 export default function DisponibilidadePage() {
-  const [medicoAtivo, setMedicoAtivo] = useState(2) // ID da Dra Ana Beatriz
-  const [horarios, setHorarios] = useState(HORARIOS_INICIAIS)
+  const { usuario } = useAuth()
+  const [medicos, setMedicos] = useState([])
+  const [medicoAtivo, setMedicoAtivo] = useState(null)
+  const [horarios, setHorarios] = useState([])
+  const [loadingMedicos, setLoadingMedicos] = useState(true)
+  const [loadingHorarios, setLoadingHorarios] = useState(false)
+  const [salvando, setSalvando] = useState(false)
   
   // Form state
-  const [formDia, setFormDia] = useState('Segunda-feira')
+  const [formDia, setFormDia] = useState('1') // 1 = Segunda-feira
   const [formInicio, setFormInicio] = useState('08:00')
-  const [formFim, setFormFim] = useState('07:00')
+  const [formFim, setFormFim] = useState('17:00')
 
   // Modal State
   const [itemParaRemover, setItemParaRemover] = useState(null)
 
-  const medicoSelecionado = MEDICOS_MOCK.find(m => m.id === medicoAtivo)
-  const horariosDoMedico = horarios.filter(h => h.medicoId === medicoAtivo)
+  const idClinica = usuario?.id_clinica || usuario?.id || usuario?.id_user
+  const nomeClinica = usuario?.nome || 'Clínica'
 
-  function handleAddHorario(e) {
-    e.preventDefault()
-    const novo = {
-      id: Date.now(),
-      medicoId: medicoAtivo,
-      dia: formDia,
-      inicio: formInicio,
-      fim: formFim,
-      ativo: true
+  // 1. Carrega os médicos reais vinculados à clínica
+  useEffect(() => {
+    async function carregarMedicos() {
+      setLoadingMedicos(true)
+      try {
+        const { data } = await api.get('/profissionais')
+        if (Array.isArray(data)) {
+          const vinculados = data.filter((p) => 
+            p.Clinicas?.some((c) => String(c.id_clinica) === String(idClinica) || c.User?.nome?.trim() === nomeClinica.trim())
+          ).map((p) => ({
+            id: p.id_profissional,
+            nome: p.User?.nome || 'Médico(a)',
+          }))
+
+          setMedicos(vinculados)
+          if (vinculados.length > 0) {
+            setMedicoAtivo(vinculados[0].id)
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao buscar médicos da clínica:', err)
+      } finally {
+        setLoadingMedicos(false)
+      }
     }
-    setHorarios([...horarios, novo])
+
+    carregarMedicos()
+  }, [idClinica, nomeClinica])
+
+  // 2. Carrega os horários reais do médico selecionado
+  useEffect(() => {
+    if (!medicoAtivo) return
+
+    async function carregarHorariosDoMedico() {
+      setLoadingHorarios(true)
+      try {
+        const { data } = await api.get(`/profissionais/${medicoAtivo}/horarios`)
+        if (Array.isArray(data)) {
+          const formatados = data.map((h) => ({
+            id: h.id_horario,
+            medicoId: medicoAtivo,
+            dia: DIAS_SEMANA_NOMES[h.dia_da_semana] || 'Dia',
+            diaNum: h.dia_da_semana,
+            inicio: h.horario_abertura?.substring(0, 5) || '08:00',
+            fim: h.horario_fechamento?.substring(0, 5) || '17:00',
+            ativo: true
+          }))
+          setHorarios(formatados)
+        } else {
+          setHorarios([])
+        }
+      } catch (err) {
+        console.error('Erro ao buscar horários do médico:', err)
+        setHorarios([])
+      } finally {
+        setLoadingHorarios(false)
+      }
+    }
+
+    carregarHorariosDoMedico()
+  }, [medicoAtivo])
+
+  const medicoSelecionado = medicos.find(m => m.id === medicoAtivo)
+
+  // 3. Salva novo horário via POST oficial
+  async function handleAddHorario(e) {
+    e.preventDefault()
+    if (!medicoAtivo) return
+    setSalvando(true)
+
+    try {
+      const payload = {
+        dia_da_semana: Number(formDia),
+        horario_abertura: `${formInicio}:00`,
+        horario_fechamento: `${formFim}:00`,
+      }
+
+      await api.post(`/profissionais/${medicoAtivo}/horarios`, payload)
+
+      // Recarrega os horários da API
+      const { data } = await api.get(`/profissionais/${medicoAtivo}/horarios`)
+      if (Array.isArray(data)) {
+        const formatados = data.map((h) => ({
+          id: h.id_horario,
+          medicoId: medicoAtivo,
+          dia: DIAS_SEMANA_NOMES[h.dia_da_semana] || 'Dia',
+          diaNum: h.dia_da_semana,
+          inicio: h.horario_abertura?.substring(0, 5) || '08:00',
+          fim: h.horario_fechamento?.substring(0, 5) || '17:00',
+          ativo: true
+        }))
+        setHorarios(formatados)
+      }
+    } catch (err) {
+      console.error('Erro ao adicionar horário:', err)
+      const msg = err.response?.data?.erro || 'Erro ao salvar horário no servidor.'
+      alert(msg)
+    } finally {
+      setSalvando(false)
+    }
   }
 
   function toggleAtivo(id) {
@@ -71,28 +163,34 @@ export default function DisponibilidadePage() {
 
       {/* ── Seleção de Médicos ── */}
       <div className="flex flex-wrap gap-3 mb-10">
-        {MEDICOS_MOCK.map(medico => {
-          const isAtivo = medico.id === medicoAtivo
-          return (
-            <button
-              key={medico.id}
-              onClick={() => setMedicoAtivo(medico.id)}
-              className={`px-5 py-2.5 rounded-full text-[14.5px] font-bold transition-colors border ${
-                isAtivo 
-                  ? 'bg-[#149983] border-[#149983] text-white shadow-sm' 
-                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              {medico.nome}
-            </button>
-          )
-        })}
+        {loadingMedicos ? (
+          <div className="text-sm text-slate-400">Carregando médicos da clínica...</div>
+        ) : medicos.length > 0 ? (
+          medicos.map(medico => {
+            const isAtivo = medico.id === medicoAtivo
+            return (
+              <button
+                key={medico.id}
+                onClick={() => setMedicoAtivo(medico.id)}
+                className={`px-5 py-2.5 rounded-full text-[14.5px] font-bold transition-colors border ${
+                  isAtivo 
+                    ? 'bg-[#149983] border-[#149983] text-white shadow-sm' 
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {medico.nome}
+              </button>
+            )
+          })
+        ) : (
+          <div className="text-sm text-slate-500">Nenhum médico vinculado a esta clínica.</div>
+        )}
       </div>
 
       {/* ── Formulário Adicionar ── */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-10">
         <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-5">
-          Adicionar horário — {medicoSelecionado?.nome}
+          Adicionar horário — {medicoSelecionado?.nome || 'Selecione um médico'}
         </h3>
         
         <form onSubmit={handleAddHorario} className="flex flex-col md:flex-row items-end gap-4">
@@ -105,7 +203,9 @@ export default function DisponibilidadePage() {
                 onChange={(e) => setFormDia(e.target.value)}
                 className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-[14px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none shadow-sm cursor-pointer pr-10"
               >
-                {DIAS_SEMANA.map(dia => <option key={dia} value={dia}>{dia}</option>)}
+                {DIAS_SEMANA_NOMES.map((dia, idx) => (
+                  <option key={idx} value={String(idx)}>{dia}</option>
+                ))}
               </select>
               <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                 <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -153,12 +253,13 @@ export default function DisponibilidadePage() {
 
           <button 
             type="submit"
-            className="w-full md:w-auto mt-4 md:mt-0 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+            disabled={salvando}
+            className="w-full md:w-auto mt-4 md:mt-0 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
-            Adicionar horário
+            {salvando ? 'Salvando...' : 'Adicionar horário'}
           </button>
         </form>
       </div>
@@ -170,10 +271,12 @@ export default function DisponibilidadePage() {
         </h3>
         
         <div className="flex flex-col gap-3">
-          {horariosDoMedico.length === 0 ? (
+          {loadingHorarios ? (
+            <p className="text-sm text-slate-500 py-6">Carregando horários...</p>
+          ) : horarios.length === 0 ? (
             <p className="text-sm text-slate-500 py-6">Nenhum horário cadastrado para este médico.</p>
           ) : (
-            horariosDoMedico.map((horario) => (
+            horarios.map((horario) => (
               <div 
                 key={horario.id} 
                 className={`rounded-2xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors ${
