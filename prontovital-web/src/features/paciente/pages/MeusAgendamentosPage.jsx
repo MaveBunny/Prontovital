@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { meusAgendamentos, cancelarConsulta } from '../../../lib/agendamentosApi'
 
-// Backend Agendamento.status = ENUM("confirmado","cancelado").
-// "Concluído" e "Confirmado" ocultos do filtro — visíveis: Todos + Cancelado.
-// ("Confirmado" aparece dentro de "Todos"; sem botão dedicado por regra de UI.)
-const STATUS_TABS = ['Todos', 'Cancelado']
+const STATUS_TABS = ['Todos', 'Confirmado', 'Cancelado']
 
 export default function MeusAgendamentosPage() {
   const [agendamentos, setAgendamentos] = useState([])
   const [statusAtivo, setStatusAtivo] = useState('Todos')
   const [carregando, setCarregando] = useState(false)
 
-  // Modal Cancelar
   const [modalCancelarAberto, setModalCancelarAberto] = useState(false)
   const [itemCancelando, setItemCancelando] = useState(null)
   const [salvandoCancelamento, setSalvandoCancelamento] = useState(false)
@@ -51,7 +47,6 @@ export default function MeusAgendamentosPage() {
     if (!itemCancelando) return
     setSalvandoCancelamento(true)
     try {
-      // Usa id_agendamento — campo real retornado pelo backend
       await cancelarConsulta(itemCancelando.id_agendamento)
       setAgendamentos((prev) =>
         prev.map((a) =>
@@ -68,8 +63,7 @@ export default function MeusAgendamentosPage() {
 
   return (
     <div className="p-6 md:p-10 lg:p-12 w-full animate-[fadeIn_0.3s_ease-out]">
-      
-      {/* ── Header ── */}
+
       <div className="mb-6">
         <h2 className="text-[26px] md:text-[30px] font-bold text-slate-900 tracking-tight">
           Meus Agendamentos
@@ -79,7 +73,6 @@ export default function MeusAgendamentosPage() {
         </p>
       </div>
 
-      {/* ── Status Pills / Tabs (exatamente como na imagem 4) ── */}
       <div className="flex flex-wrap items-center gap-2 mb-8">
         {STATUS_TABS.map((tab) => {
           const ativo = statusAtivo === tab
@@ -99,7 +92,6 @@ export default function MeusAgendamentosPage() {
         })}
       </div>
 
-      {/* ── Lista de Agendamentos ── */}
       {carregando ? (
         <div className="flex items-center justify-center py-20">
           <svg className="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
@@ -137,10 +129,8 @@ export default function MeusAgendamentosPage() {
                 key={item.id}
                 className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-6 transition-all hover:shadow-xs"
               >
-                {/* Linha Superior: Médico + Data/Status */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                  
-                  {/* Avatar + Info Médico */}
+
                   <div className="flex items-center gap-3.5">
                     <div className="w-11 h-11 rounded-full bg-teal-50 text-teal-700 flex items-center justify-center shrink-0 font-bold text-sm">
                       {item.iniciais || 'DR'}
@@ -155,7 +145,6 @@ export default function MeusAgendamentosPage() {
                     </div>
                   </div>
 
-                  {/* Data & Status */}
                   <div className="flex flex-col sm:items-end gap-1.5">
                     <span className="text-xs font-bold text-slate-800">
                       {item.dataFormatada}
@@ -167,7 +156,6 @@ export default function MeusAgendamentosPage() {
 
                 </div>
 
-                {/* Caixa Azul: Observação do agendamento (campo "obvervacao" do backend) */}
                 <div className="bg-sky-50/60 border border-sky-100/80 rounded-xl p-4 mb-3">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-teal-700 tracking-wider mb-1.5">
                     <svg className="w-4 h-4 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
@@ -180,7 +168,6 @@ export default function MeusAgendamentosPage() {
                   </p>
                 </div>
 
-                {/* Ação: Cancelar Consulta (se confirmado) */}
                 {isConfirmado && (
                   <div className="flex justify-end pt-1">
                     <button
@@ -198,7 +185,6 @@ export default function MeusAgendamentosPage() {
         </div>
       )}
 
-      {/* ── Modal de Confirmação de Cancelamento ── */}
       {modalCancelarAberto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-[fadeIn_0.2s_ease-out]">
           <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl border border-slate-100 animate-[zoomIn_0.2s_ease-out]">

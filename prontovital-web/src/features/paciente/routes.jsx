@@ -12,7 +12,6 @@ export default function PacienteRoutes() {
   return (
     <Routes>
       <Route element={<PacienteLayout />}>
-        {/* Redirecionamento inicial: Tela Inicial (Busca rápida + Pré-triagem com IA) */}
         <Route index element={<Navigate to="pre-triagem" replace />} />
         <Route path="pre-triagem" element={<PreTriagemPage />} />
         <Route path="clinicas" element={<ClinicasPage />} />
@@ -21,7 +20,6 @@ export default function PacienteRoutes() {
         <Route path="historico-triagens" element={<HistoricoTriagensPage />} />
         <Route path="perfil" element={<MeuPerfilPage />} />
         <Route path="editar-perfil" element={<EditarPerfilPage />} />
-        {/* Compatibilidade de rotas antigas */}
         <Route path="dashboard" element={<Navigate to="pre-triagem" replace />} />
         <Route path="triagem" element={<Navigate to="pre-triagem" replace />} />
       </Route>

@@ -2,9 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { meuPerfil, editarPerfil } from '../../lib/pacientesApi'
 import { useAuth } from './useAuth'
 
-/**
- * Hook para gerenciar dados do perfil do paciente logado
- */
 export function usePaciente() {
   const { usuario } = useAuth()
   const [paciente, setPaciente] = useState(null)

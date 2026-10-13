@@ -1,20 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-// TODO: Integrar quando o backend suportar este endpoint
-// O backend atual não possui tabela de triagens nem rota GET /triagens.
-// Os dados exibidos aqui são mockados no localStorage via triagemApi.js.
-import { historicoTriagens, INITIAL_TRIAGENS } from '../../../lib/triagensApi'
+import { historicoTriagens } from '../../../lib/triagensApi'
 import ModalAgendarConsulta from '../components/ModalAgendarConsulta'
 
 export default function HistoricoTriagensPage() {
   const navigate = useNavigate()
-  // TODO: Integrar quando o backend suportar este campo
-  // Inicia com os dados mockados definidos em triagemApi.js
-  const [triagens, setTriagens] = useState(INITIAL_TRIAGENS)
+  const [triagens, setTriagens] = useState([])
   const [expandidoId, setExpandidoId] = useState(null)
   const [carregando, setCarregando] = useState(false)
 
-  // Modal Agendamento
   const [modalAberto, setModalAberto] = useState(false)
   const [triagemSelecionada, setTriagemSelecionada] = useState(null)
 
@@ -22,17 +16,13 @@ export default function HistoricoTriagensPage() {
     carregar()
   }, [])
 
-  // TODO: Integrar quando o backend suportar GET /triagens
-  // Por enquanto, historicoTriagens() lê apenas do localStorage
   async function carregar() {
     setCarregando(true)
     try {
       const dados = await historicoTriagens()
-      if (dados && dados.length > 0) {
-        setTriagens(dados)
-      }
+      setTriagens(Array.isArray(dados) ? dados : [])
     } catch {
-      setTriagens(INITIAL_TRIAGENS)
+      setTriagens([])
     } finally {
       setCarregando(false)
     }
@@ -49,8 +39,7 @@ export default function HistoricoTriagensPage() {
 
   return (
     <div className="p-6 md:p-10 lg:p-12 w-full animate-[fadeIn_0.3s_ease-out]">
-      
-      {/* ── Header ── */}
+
       <div className="mb-8">
         <h2 className="text-[26px] md:text-[30px] font-bold text-slate-900 tracking-tight">
           Histórico de Triagens
@@ -60,7 +49,6 @@ export default function HistoricoTriagensPage() {
         </p>
       </div>
 
-      {/* ── Lista de Triagens (Acordeão como na Imagem 5) ── */}
       {carregando ? (
         <div className="flex items-center justify-center py-20">
           <svg className="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
@@ -75,14 +63,8 @@ export default function HistoricoTriagensPage() {
           </div>
           <h4 className="text-base font-bold text-slate-800">Nenhuma triagem registrada</h4>
           <p className="text-xs text-slate-400 mt-1 mb-4">
-            Você ainda não realizou nenhuma pré-triagem com nosso assistente de IA.
+            Você ainda não realizou nenhuma pré-triagem.
           </p>
-          <button
-            onClick={() => navigate('/paciente/pre-triagem')}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors"
-          >
-            Iniciar Pré-Triagem Agora
-          </button>
         </div>
       ) : (
         <div className="space-y-4 max-w-4xl">
@@ -93,7 +75,6 @@ export default function HistoricoTriagensPage() {
                 key={item.id}
                 className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden transition-all hover:border-slate-300"
               >
-                {/* Linha Principal Clicável (Header do Card) */}
                 <button
                   onClick={() => toggleExpandir(item.id)}
                   className="w-full p-6 flex items-center justify-between text-left cursor-pointer transition-colors hover:bg-slate-50/50"
@@ -112,11 +93,9 @@ export default function HistoricoTriagensPage() {
                   </div>
                 </button>
 
-                {/* Conteúdo Expandido com Detalhes da IA */}
                 {isAberto && (
                   <div className="px-6 pb-6 pt-2 border-t border-slate-100 animate-[fadeIn_0.2s_ease-out] space-y-4">
-                    
-                    {/* Dados Básicos */}
+
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
                       <div className="bg-slate-50 rounded-xl p-3">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
@@ -146,7 +125,6 @@ export default function HistoricoTriagensPage() {
                       </div>
                     </div>
 
-                    {/* Resumo da IA */}
                     <div className="bg-sky-50/60 border border-sky-100/80 rounded-xl p-4">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-teal-700 tracking-wider mb-1.5">
                         <svg className="w-4 h-4 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
@@ -159,7 +137,6 @@ export default function HistoricoTriagensPage() {
                       </p>
                     </div>
 
-                    {/* Botão de Agendamento Rápido com a Especialidade */}
                     <div className="flex items-center justify-end gap-3 pt-1">
                       <button
                         onClick={() => handleAgendarComEspecialidade(item)}
@@ -177,7 +154,6 @@ export default function HistoricoTriagensPage() {
         </div>
       )}
 
-      {/* ── Modal de Agendamento ── */}
       {modalAberto && (
         <ModalAgendarConsulta
           aberto={modalAberto}

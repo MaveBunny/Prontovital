@@ -20,7 +20,6 @@ export default function VisaoGeralPage() {
     async function carregarDados() {
       setLoading(true)
       try {
-        // 1. Busca agendamentos da clínica
         let agendamentosData = []
         if (idClinica) {
           try {
@@ -33,7 +32,6 @@ export default function VisaoGeralPage() {
           }
         }
 
-        // 2. Busca profissionais da clínica
         let totalMedicos = 0
         try {
           const { data: profissionais } = await api.get('/profissionais')
@@ -47,7 +45,6 @@ export default function VisaoGeralPage() {
           console.error('Erro ao buscar profissionais:', e)
         }
 
-        // Cálculos
         const hojeIso = new Date().toISOString().split('T')[0]
         const agendamentosHoje = agendamentosData.filter(a => a.data_agendamento === hojeIso).length
         const totalConfirmados = agendamentosData.filter(a => a.status?.toLowerCase() === 'confirmado').length
@@ -59,11 +56,10 @@ export default function VisaoGeralPage() {
           total: agendamentosData.length
         })
 
-        // Formata os mais recentes
         const formatados = agendamentosData.slice(0, 5).map((item) => {
           const nomePaciente = item.Paciente?.User?.nome || 'Paciente'
           const partes = nomePaciente.trim().split(' ')
-          const iniciais = partes.length >= 2 
+          const iniciais = partes.length >= 2
             ? (partes[0][0] + partes[1][0]).toUpperCase()
             : nomePaciente.substring(0, 2).toUpperCase()
 
@@ -111,16 +107,14 @@ export default function VisaoGeralPage() {
 
   return (
     <div className="p-8 lg:p-12 w-full animate-[fadeIn_0.3s_ease-out]">
-      
-      {/* ── Header ── */}
+
       <div className="mb-10">
         <h2 className="text-[28px] font-bold text-slate-900 tracking-tight">Visão Geral</h2>
         <p className="text-[15px] text-slate-500 mt-1">{usuario?.nome || 'Clínica'}</p>
       </div>
 
-      {/* ── Cards de Estatísticas ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        
+
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col justify-between min-h-[140px]">
           <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -171,10 +165,9 @@ export default function VisaoGeralPage() {
 
       </div>
 
-      {/* ── Agendamentos Recentes ── */}
       <div>
         <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Agendamentos Recentes</h3>
-        
+
         <div className="flex flex-col gap-3">
           {loading ? (
             <div className="text-sm text-slate-400 py-4">Carregando agendamentos...</div>
@@ -202,8 +195,7 @@ export default function VisaoGeralPage() {
           )}
         </div>
       </div>
-      
-      {/* Botão flutuante de ajuda */}
+
       <button className="fixed bottom-6 right-6 w-12 h-12 bg-slate-800 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-slate-900 transition-colors">
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />

@@ -10,7 +10,6 @@ export default function EditarPerfilPage() {
   const navigate = useNavigate()
   const { paciente, carregando: carregandoPerfil, atualizar } = usePaciente()
 
-  // Estado inicial — somente campos existentes no backend (User + Paciente)
   const perfilInicial = getPerfilDinamico()
 
   const [form, setForm] = useState({
@@ -26,7 +25,6 @@ export default function EditarPerfilPage() {
     observacoes: '',
   })
 
-  // Preenche o form quando o perfil carregar do backend (evita campos vazios)
   useEffect(() => {
     const base = paciente || perfilInicial
     if (!base) return
@@ -46,7 +44,6 @@ export default function EditarPerfilPage() {
       sexo: prev.sexo !== 'Masculino' && prev.sexo ? prev.sexo : base.sexo || 'Masculino',
       observacoes: prev.observacoes || base.observacoes || '',
     }))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paciente])
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
@@ -64,7 +61,6 @@ export default function EditarPerfilPage() {
     setSalvando(true)
     setErro('')
     try {
-      // PATCH /usuarios/perfil — somente campos do contrato do backend
       await atualizar({
         nome: form.nome,
         email: form.email,
@@ -95,7 +91,6 @@ export default function EditarPerfilPage() {
 
   return (
     <div className="px-4 py-6">
-      {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => navigate('/paciente/perfil')}
@@ -109,7 +104,6 @@ export default function EditarPerfilPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {/* Dados pessoais (User) */}
         <div className="bg-white rounded-2xl border border-slate-100 p-5">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Dados Pessoais</p>
           <div className="flex flex-col gap-4">
@@ -173,7 +167,6 @@ export default function EditarPerfilPage() {
           </div>
         </div>
 
-        {/* Dados de paciente (Paciente) */}
         <div className="bg-white rounded-2xl border border-slate-100 p-5">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Dados de Paciente</p>
           <div className="flex flex-col gap-4">
@@ -218,7 +211,6 @@ export default function EditarPerfilPage() {
           </div>
         </div>
 
-        {/* Feedback */}
         {erro && <p className="text-sm text-red-500 bg-red-50 px-4 py-2 rounded-xl">{erro}</p>}
         {sucesso && (
           <p className="text-sm text-green-600 bg-green-50 px-4 py-2 rounded-xl flex items-center gap-2">

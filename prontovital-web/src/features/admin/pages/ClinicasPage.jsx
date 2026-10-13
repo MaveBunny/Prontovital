@@ -7,25 +7,23 @@ export default function ClinicasPage() {
   const [clinicas, setClinicas] = useState([])
   const [busca, setBusca] = useState('')
 
-  // Modal Exclusão
   const [modalExcluirAberto, setModalExcluirAberto] = useState(false)
   const [itemParaExcluir, setItemParaExcluir] = useState(null)
   const [excluindo, setExcluindo] = useState(false)
 
-  // Modal Nova Clínica
   const [modalNovoAberto, setModalNovoAberto] = useState(false)
   const [salvando, setSalvando] = useState(false)
-  const [form, setForm] = useState({ 
-    nome: '', 
-    cnpj: '', 
-    email: '', 
+  const [form, setForm] = useState({
+    nome: '',
+    cnpj: '',
+    email: '',
     senha: '',
-    endereco: '', 
-    localizacao: '', 
+    endereco: '',
+    localizacao: '',
     cidade: 'Recife',
     estado: 'PE',
-    telefone: '', 
-    status: 'Ativo' 
+    telefone: '',
+    status: 'Ativo'
   })
 
   useEffect(() => {
@@ -58,7 +56,7 @@ export default function ClinicasPage() {
             id_clinica: item.id_clinica,
             nome: item.User?.nome?.trim() || 'Clínica Sem Nome',
             localizacao: item.bairro || item.User?.cidade || 'Recife',
-            telefone: item.User?.telefone || '(81) 3333-0000',
+            telefone: item.User?.telefone || 'Não informado',
             profissionais: qtdProfissionais,
             status: item.User?.ativo !== false ? 'Ativo' : 'Inativo',
           }
@@ -69,20 +67,17 @@ export default function ClinicasPage() {
       }
     } catch (err) {
       console.error('Erro ao carregar clínicas da API:', err)
-      // Fallback quando offline com filtro local pelo termo
-      const fallback = [
-        { id: 1, id_clinica: 1, nome: 'Clínica Saúde Ilha do Leite', localizacao: 'Ilha do Leite', telefone: '(81) 3333-1111', profissionais: 2, status: 'Ativo' },
-        { id: 2, id_clinica: 2, nome: 'Centro Médico Boa Viagem', localizacao: 'Boa Viagem', telefone: '(81) 3333-2222', profissionais: 1, status: 'Ativo' },
-        { id: 3, id_clinica: 3, nome: 'Policlínica Madalena', localizacao: 'Madalena', telefone: '(81) 3333-3333', profissionais: 1, status: 'Ativo' },
-      ].filter(c => !termo || c.nome.toLowerCase().includes(termo.toLowerCase()) || c.localizacao.toLowerCase().includes(termo.toLowerCase()))
-      
-      setClinicas(fallback)
+      setErro(
+        err.response?.data?.erro ||
+        err.response?.data?.mensagem ||
+        'Não foi possível carregar as clínicas do banco real. Verifique login admin e token.'
+      )
+      setClinicas([])
     } finally {
       setLoading(false)
     }
   }
 
-  // Ações de Exclusão
   function abrirModalExcluir(id) {
     setItemParaExcluir(id)
     setModalExcluirAberto(true)
@@ -97,7 +92,6 @@ export default function ClinicasPage() {
     if (!itemParaExcluir) return
     setExcluindo(true)
     try {
-      // Como o backend ainda não possui rota DELETE /clinicas, removemos visualmente
       setClinicas(prev => prev.filter(c => c.id !== itemParaExcluir))
       fecharModalExcluir()
     } finally {
@@ -105,7 +99,6 @@ export default function ClinicasPage() {
     }
   }
 
-  // Ações de Criação
   async function handleSalvarNova(e) {
     e.preventDefault()
     setSalvando(true)
@@ -139,31 +132,30 @@ export default function ClinicasPage() {
 
   function fecharModalNovo() {
     setModalNovoAberto(false)
-    setForm({ 
-      nome: '', 
-      cnpj: '', 
-      email: '', 
+    setForm({
+      nome: '',
+      cnpj: '',
+      email: '',
       senha: '',
-      endereco: '', 
-      localizacao: '', 
+      endereco: '',
+      localizacao: '',
       cidade: 'Recife',
       estado: 'PE',
-      telefone: '', 
-      status: 'Ativo' 
+      telefone: '',
+      status: 'Ativo'
     })
   }
 
   return (
     <>
       <div className="p-4 sm:p-6 md:p-8 lg:p-12 w-full animate-[fadeIn_0.3s_ease-out]">
-        
-        {/* ── Header ── */}
+
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6 sm:mb-8">
           <div>
             <h2 className="text-[24px] sm:text-[28px] font-bold text-slate-900 tracking-tight">Clínicas</h2>
             <p className="text-[14px] sm:text-[15px] text-slate-500 mt-1">Gerencie as unidades parceiras da rede.</p>
           </div>
-          <button 
+          <button
             onClick={() => setModalNovoAberto(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-[14px] transition-colors shadow-sm flex items-center gap-2 w-full sm:w-auto justify-center"
           >
@@ -173,7 +165,6 @@ export default function ClinicasPage() {
 
         {erro && <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6">{erro}</div>}
 
-        {/* ── Busca (Parâmetro nativo do back-end: ?busca=) ── */}
         <div className="mb-6 sm:mb-8">
           <div className="relative w-full">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -191,7 +182,6 @@ export default function ClinicasPage() {
           </div>
         </div>
 
-        {/* ── Lista de Clínicas ── */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -200,21 +190,18 @@ export default function ClinicasPage() {
           <div className="flex flex-col gap-4">
             {clinicas.length > 0 ? (
               clinicas.map((item) => (
-                <div 
-                  key={item.id} 
+                <div
+                  key={item.id}
                   className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 hover:shadow-md transition-shadow overflow-hidden"
                 >
-                  
-                  {/* Lado Esquerdo: Ícone e Info */}
+
                   <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                    {/* Ícone */}
                     <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
                       <svg className="w-5 h-5 sm:w-6 sm:h-6 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
                       </svg>
                     </div>
-                    
-                    {/* Textos */}
+
                     <div className="min-w-0 flex-1">
                       <h3 className="text-[14px] sm:text-[15px] font-bold text-slate-900 truncate">{item.nome}</h3>
                       <div className="flex items-center gap-1.5 mt-0.5 text-slate-500">
@@ -229,25 +216,21 @@ export default function ClinicasPage() {
                     </div>
                   </div>
 
-                  {/* Lado Direito: Profis, Status e Ações */}
                   <div className="flex flex-row items-center justify-between md:justify-end gap-4 sm:gap-6 md:gap-8 w-full md:w-auto pt-3 md:pt-0 border-t border-slate-100 md:border-t-0">
-                    
-                    {/* Qtde Profissionais */}
+
                     <div className="text-center">
                       <span className="block text-[16px] sm:text-[18px] font-extrabold text-slate-900 leading-none">{item.profissionais}</span>
                       <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Profis.</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-3 sm:gap-4">
-                      {/* Badge Ativo */}
                       <span className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-[12px] font-bold uppercase tracking-wider ${
                         item.status === 'Ativo' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                       }`}>
                         {item.status}
                       </span>
-                      
-                      {/* Lixeira */}
-                      <button 
+
+                      <button
                         onClick={() => abrirModalExcluir(item.id)}
                         className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
                         title="Excluir Clínica"
@@ -271,10 +254,9 @@ export default function ClinicasPage() {
         )}
       </div>
 
-      {/* ── Modal de Exclusão ── */}
       {modalExcluirAberto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-          <div 
+          <div
             className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-[zoomIn_0.2s_ease-out]"
             onClick={(e) => e.stopPropagation()}
           >
@@ -283,7 +265,7 @@ export default function ClinicasPage() {
               <p className="text-sm text-slate-500 mb-8 leading-relaxed">
                 Tem certeza que deseja remover esta clínica da rede? Esta ação não pode ser desfeita.
               </p>
-              
+
               <div className="flex flex-col-reverse sm:flex-row items-center justify-center gap-3">
                 <button
                   onClick={fecharModalExcluir}
@@ -314,19 +296,17 @@ export default function ClinicasPage() {
         </div>
       )}
 
-      {/* ── Modal de Nova Clínica ── */}
       {modalNovoAberto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-          <div 
+          <div
             className="bg-white w-full max-w-3xl rounded-xl shadow-xl overflow-hidden animate-[zoomIn_0.2s_ease-out] max-h-[90vh] overflow-y-auto border border-slate-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-8">
               <h3 className="text-[13px] font-bold text-slate-600 uppercase tracking-wider mb-6">Cadastrar Nova Clínica</h3>
-              
+
               <form onSubmit={handleSalvarNova} className="flex flex-col gap-5">
-                
-                {/* Linha 1 */}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Nome</label>
@@ -338,7 +318,6 @@ export default function ClinicasPage() {
                   </div>
                 </div>
 
-                {/* Linha 2 (E-mail e Senha) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">E-mail de Acesso</label>
@@ -350,13 +329,11 @@ export default function ClinicasPage() {
                   </div>
                 </div>
 
-                {/* Linha 3 */}
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Endereço</label>
                   <input type="text" required value={form.endereco} onChange={e => setForm({...form, endereco: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-[14px] text-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all placeholder-slate-400" placeholder="Rua, número" />
                 </div>
 
-                {/* Linha 4 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Bairro / Cidade</label>
@@ -368,7 +345,6 @@ export default function ClinicasPage() {
                   </div>
                 </div>
 
-                {/* Botões alinhados à esquerda como no print */}
                 <div className="mt-4 flex flex-row gap-3">
                   <button type="submit" disabled={salvando} className="px-6 py-2.5 rounded-lg bg-[#2563eb] text-white font-bold text-[14px] hover:bg-blue-700 transition-colors flex items-center justify-center min-w-[120px]">
                     {salvando ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 'Cadastrar'}

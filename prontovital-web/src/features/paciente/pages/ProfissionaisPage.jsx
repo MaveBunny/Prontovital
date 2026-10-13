@@ -19,7 +19,6 @@ export default function ProfissionaisPage() {
   const [especialidadeSelecionada, setEspecialidadeSelecionada] = useState('Todos')
   const [carregando, setCarregando] = useState(true)
 
-  // Modal Agendamento
   const [modalAberto, setModalAberto] = useState(false)
   const [medicoSelecionado, setMedicoSelecionado] = useState(null)
 
@@ -58,8 +57,7 @@ export default function ProfissionaisPage() {
 
   return (
     <div className="p-6 md:p-10 lg:p-12 w-full animate-[fadeIn_0.3s_ease-out]">
-      
-      {/* ── Header ── */}
+
       <div className="mb-8">
         <h2 className="text-[26px] md:text-[30px] font-bold text-slate-900 tracking-tight">
           Profissionais
@@ -69,10 +67,8 @@ export default function ProfissionaisPage() {
         </p>
       </div>
 
-      {/* ── Barra de Filtros ── */}
       <div className="flex flex-col sm:flex-row items-center gap-4 mb-8 max-w-5xl">
-        
-        {/* Input de Busca */}
+
         <div className="relative flex-1 w-full">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -88,7 +84,6 @@ export default function ProfissionaisPage() {
           />
         </div>
 
-        {/* Select de Especialidades */}
         <div className="w-full sm:w-56">
           <select
             value={especialidadeSelecionada}
@@ -105,7 +100,6 @@ export default function ProfissionaisPage() {
 
       </div>
 
-      {/* ── Grid de Cards de Profissionais ── */}
       {carregando ? (
         <div className="flex flex-col items-center justify-center py-20 text-slate-400">
           <svg className="animate-spin h-8 w-8 text-blue-600 mb-3" fill="none" viewBox="0 0 24 24">
@@ -134,7 +128,6 @@ export default function ProfissionaisPage() {
               className="bg-white rounded-2xl border border-slate-200/90 hover:border-blue-300 hover:shadow-md transition-all p-6 flex flex-col justify-between"
             >
               <div>
-                {/* Avatar e Informações */}
                 <div className="flex items-start gap-4 mb-4">
                   <div className="w-12 h-12 rounded-full bg-teal-50 text-teal-700 flex items-center justify-center shrink-0 font-bold text-sm tracking-wider">
                     {medico.iniciais || 'DR'}
@@ -153,7 +146,6 @@ export default function ProfissionaisPage() {
                 </div>
               </div>
 
-              {/* Botão Agendar Consulta */}
               <div className="pt-2">
                 <button
                   onClick={() => handleAgendar(medico)}
@@ -167,7 +159,6 @@ export default function ProfissionaisPage() {
         </div>
       )}
 
-      {/* ── Modal de Agendamento ── */}
       {modalAberto && (
         <ModalAgendarConsulta
           aberto={modalAberto}

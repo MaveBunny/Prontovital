@@ -1,8 +1,5 @@
 import { forwardRef } from 'react'
 
-/**
- * Input reutilizável com suporte a label, erro e estilos de alta fidelidade
- */
 const Input = forwardRef(function Input(
   { label, error, id, className = '', ...props },
   ref

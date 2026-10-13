@@ -12,10 +12,6 @@ const sizes = {
   lg: 'px-8 py-3.5 text-base',
 }
 
-/**
- * Botão reutilizável PRONTOVITAL
- * @param {{ variant?: 'primary'|'secondary'|'danger'|'ghost'|'outline', size?: 'sm'|'md'|'lg', loading?: boolean }} props
- */
 export default function Button({
   children,
   variant = 'primary',

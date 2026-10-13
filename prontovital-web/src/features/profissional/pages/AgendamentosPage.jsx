@@ -12,9 +12,8 @@ export default function AgendamentosPage() {
   const navigate = useNavigate()
   const [agendamentos, setAgendamentos] = useState([])
   const [loading, setLoading] = useState(true)
-  
-  // Modals state
-  const [modalAberto, setModalAberto] = useState(null) // 'cancelar' | 'remover' | null
+
+  const [modalAberto, setModalAberto] = useState(null)
   const [itemSelecionado, setItemSelecionado] = useState(null)
 
   useEffect(() => {
@@ -35,7 +34,7 @@ export default function AgendamentosPage() {
             'Paciente'
 
           const partesNome = nomePaciente.trim().split(' ')
-          const iniciais = partesNome.length >= 2 
+          const iniciais = partesNome.length >= 2
             ? (partesNome[0][0] + partesNome[1][0]).toUpperCase()
             : nomePaciente.substring(0, 2).toUpperCase()
 
@@ -117,8 +116,8 @@ export default function AgendamentosPage() {
       } catch (cancelErr) {
         console.warn('Erro ao cancelar agendamento na API:', cancelErr)
       }
-      setAgendamentos((prev) => prev.map(a => 
-        a.id === itemSelecionado.id 
+      setAgendamentos((prev) => prev.map(a =>
+        a.id === itemSelecionado.id
           ? { ...a, status: 'Cancelado', statusStyle: 'bg-red-100 text-red-700' }
           : a
       ))
@@ -128,14 +127,12 @@ export default function AgendamentosPage() {
 
   return (
     <div className="p-8 lg:p-12 w-full animate-[fadeIn_0.3s_ease-out] relative min-h-screen">
-      
-      {/* ── Header ── */}
+
       <div className="mb-8">
         <h2 className="text-[28px] font-bold text-slate-900 tracking-tight">Agendamentos</h2>
         <p className="text-[15px] text-slate-500 mt-1">Suas consultas agendadas, concluídas e canceladas.</p>
       </div>
 
-      {/* ── Lista de Agendamentos em Cards ── */}
       <div className="flex flex-col gap-4">
         {loading ? (
           <p className="text-sm text-slate-400 py-10 text-center">Carregando agendamentos...</p>
@@ -145,8 +142,8 @@ export default function AgendamentosPage() {
           </p>
         ) : (
           agendamentos.map((item) => (
-            <div 
-              key={item.id} 
+            <div
+              key={item.id}
               className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between"
             >
               <div className="flex items-center gap-4">
@@ -165,8 +162,8 @@ export default function AgendamentosPage() {
                 </span>
 
                 <div className="flex items-center gap-3">
-                  <button 
-                    onClick={(e) => abrirModal(e, 'cancelar', item)} 
+                  <button
+                    onClick={(e) => abrirModal(e, 'cancelar', item)}
                     className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
                     title="Cancelar Agendamento"
                   >
@@ -175,8 +172,8 @@ export default function AgendamentosPage() {
                     </svg>
                   </button>
 
-                  <button 
-                    onClick={(e) => abrirModal(e, 'remover', item)} 
+                  <button
+                    onClick={(e) => abrirModal(e, 'remover', item)}
                     className="p-1 text-red-400 hover:text-red-600 transition-colors"
                     title="Remover Agendamento"
                   >
@@ -192,36 +189,34 @@ export default function AgendamentosPage() {
         )}
       </div>
 
-      {/* Botão flutuante de ajuda */}
       <button className="fixed bottom-6 right-6 w-12 h-12 bg-slate-800 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-slate-900 transition-colors">
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
         </svg>
       </button>
 
-      {/* ── Modais ── */}
       {modalAberto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-[1px] animate-[fadeIn_0.2s_ease-out]">
           <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl scale-100 animate-[zoomIn_0.2s_ease-out]">
-            
+
             <h3 className="text-xl font-bold text-slate-900 tracking-tight">
               {modalAberto === 'remover' ? 'Remover agendamento?' : 'Cancelar agendamento?'}
             </h3>
-            
+
             <p className="text-[15px] text-slate-500 mt-2 mb-6 leading-relaxed">
-              {modalAberto === 'remover' 
+              {modalAberto === 'remover'
                 ? 'Tem certeza que deseja remover este agendamento? Esta ação não pode ser desfeita.'
                 : 'Tem certeza que deseja cancelar este agendamento?'}
             </p>
-            
+
             <div className="flex items-center gap-3">
-              <button 
+              <button
                 onClick={fecharModal}
                 className="flex-1 py-3 px-4 border-2 border-blue-600 text-blue-600 font-bold rounded-xl hover:bg-blue-50 transition-colors cursor-pointer"
               >
                 Cancelar
               </button>
-              <button 
+              <button
                 onClick={handleConfirmarAcao}
                 className="flex-1 py-3 px-4 bg-[#E02424] text-white font-bold rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
@@ -231,7 +226,7 @@ export default function AgendamentosPage() {
                 {modalAberto === 'remover' ? 'Remover agendamento' : 'Confirmar cancelamento'}
               </button>
             </div>
-            
+
           </div>
         </div>
       )}

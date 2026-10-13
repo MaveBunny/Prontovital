@@ -1,7 +1,3 @@
-/**
- * Camada de serviço — agendamentos reais do profissional.
- * Consome GET /profissionais/:id_profissional/agendamentos
- */
 import api from './api'
 
 export function getIdProfissionalLocal() {
@@ -38,10 +34,6 @@ export function toDataHora(ag) {
   return new Date().toISOString()
 }
 
-/**
- * Data do agendamento no formato YYYY-MM-DD, sem conversão de fuso.
- * Evita que `new Date('2026-10-13T00:00:00Z')` vire dia 12 no UTC-3.
- */
 export function toDataAgendamento(ag) {
   if (!ag) return ''
   if (ag.data_agendamento) return String(ag.data_agendamento).slice(0, 10)
