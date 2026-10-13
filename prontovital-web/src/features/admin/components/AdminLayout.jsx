@@ -93,8 +93,7 @@ export default function AdminLayout() {
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold text-slate-800 truncate">{nomeUsuario}</p>
-                <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">{emailUsuario}</p>
+                <p className="text-[14px] font-bold text-slate-800 truncate">{nomeUsuario}</p>
               </div>
             </div>
           </div>

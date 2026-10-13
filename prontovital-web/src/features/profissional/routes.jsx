@@ -2,7 +2,6 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import ProfissionalLayout from './components/ProfissionalLayout'
 import AgendaPage from './pages/AgendaPage'
 import AgendamentosPage from './pages/AgendamentosPage'
-import DetalhesConsultaPage from './pages/DetalhesConsultaPage'
 
 export default function ProfissionalRoutes() {
   return (
@@ -15,7 +14,8 @@ export default function ProfissionalRoutes() {
         <Route index element={<Navigate to="agenda" replace />} />
         <Route path="agenda" element={<AgendaPage />} />
         <Route path="agendamentos" element={<AgendamentosPage />} />
-        <Route path="consulta/:id" element={<DetalhesConsultaPage />} />
+        {/* Qualquer rota de consulta volta para a agenda */}
+        <Route path="consulta/*" element={<Navigate to="/profissional/agenda" replace />} />
       </Route>
     </Routes>
   )

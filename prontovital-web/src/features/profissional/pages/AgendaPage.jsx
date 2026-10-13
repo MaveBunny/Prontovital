@@ -1,497 +1,411 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import LoadingSpinner from '../../../components/shared/LoadingSpinner'
+import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../../shared/hooks/useAuth'
 import {
   listarAgendamentosProfissional,
   toDataAgendamento,
-  toDataHora,
+  toDataHora
 } from '../../../lib/profissionalAgendaApi'
 
-function normalizar(ag) {
-  const nomePaciente =
-    ag?.Paciente?.User?.nome ||
-    ag?.Paciente?.nome ||
-    ag?.paciente?.nome ||
-    ag?.nome_paciente ||
-    'Paciente'
-  return {
-    id: String(ag.id_agendamento ?? ag.id),
-    paciente: { nome: nomePaciente },
-    especialidade:
-      ag?.Especialidade?.nome || ag?.especialidade || 'Clínica geral',
-    dataHora: toDataHora(ag),
-    dataAgendamento: toDataAgendamento(ag),
-    status: ag.status,
+const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+const MESES_COMPLETOS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+const DIAS_SEMANA = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+
+function getMonday(d) {
+  const date = new Date(d)
+  const day = date.getDay()
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1)
+  return new Date(date.setDate(diff))
+}
+
+function addDays(date, days) {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
+}
+
+function isSameDay(d1, d2) {
+  if (!d1 || !d2) return false
+  return d1.getDate() === d2.getDate() &&
+         d1.getMonth() === d2.getMonth() &&
+         d1.getFullYear() === d2.getFullYear()
+}
+
+function formatDateToIso(d) {
+  if (!d) return ''
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function generateMonthMatrix(year, month) {
+  const matrix = []
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0).getDate()
+  
+  let firstDayOfWeek = firstDay.getDay()
+  firstDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1
+
+  let currentDay = 1
+  for (let row = 0; row < 6; row++) {
+    const week = []
+    for (let col = 0; col < 7; col++) {
+      if (row === 0 && col < firstDayOfWeek) {
+        week.push(null)
+      } else if (currentDay > lastDay) {
+        week.push(null)
+      } else {
+        week.push(new Date(year, month, currentDay))
+        currentDay++
+      }
+    }
+    matrix.push(week)
+    if (currentDay > lastDay) break
   }
-}
-
-const DIAS = [
-  { indice: 1, nome: 'SEG' },
-  { indice: 2, nome: 'TER' },
-  { indice: 3, nome: 'QUA' },
-  { indice: 4, nome: 'QUI' },
-  { indice: 5, nome: 'SEX' },
-  { indice: 6, nome: 'SÁB' },
-  { indice: 0, nome: 'DOM' },
-]
-
-function inicioDaSemana(data) {
-  const resultado = new Date(data)
-  const dia = resultado.getDay()
-  const diferenca = dia === 0 ? -6 : 1 - dia
-
-  resultado.setDate(resultado.getDate() + diferenca)
-  resultado.setHours(0, 0, 0, 0)
-
-  return resultado
-}
-
-function adicionarDias(data, quantidade) {
-  const resultado = new Date(data)
-  resultado.setDate(resultado.getDate() + quantidade)
-  return resultado
-}
-
-function mesmaData(dataA, dataB) {
-  return (
-    dataA.getFullYear() === dataB.getFullYear() &&
-    dataA.getMonth() === dataB.getMonth() &&
-    dataA.getDate() === dataB.getDate()
-  )
-}
-
-function formatarPeriodo(inicio, fim) {
-  const mesmoMes = inicio.getMonth() === fim.getMonth()
-  const mesmoAno = inicio.getFullYear() === fim.getFullYear()
-
-  const diaInicio = inicio.getDate()
-  const diaFim = fim.getDate()
-
-  const nomeMesInicio = inicio.toLocaleDateString('pt-BR', { month: 'short' })
-  const nomeMesFim = fim.toLocaleDateString('pt-BR', { month: 'short' })
-
-  if (mesmoMes && mesmoAno) {
-    return `${diaInicio} - ${diaFim} de ${nomeMesFim.replace('.', '')} ${fim.getFullYear()}`
-  }
-
-  if (mesmoAno) {
-    return `${diaInicio} ${nomeMesInicio.replace('.', '')} - ${diaFim} ${nomeMesFim.replace('.', '')} ${fim.getFullYear()}`
-  }
-
-  return `${diaInicio} ${nomeMesInicio.replace('.', '')} ${inicio.getFullYear()} - ${diaFim} ${nomeMesFim.replace('.', '')} ${fim.getFullYear()}`
-}
-
-function formatarHorario(dataHora) {
-  return new Date(dataHora).toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function formatarDataCompleta(data) {
-  return data.toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-}
-
-function nomeDoMes(data) {
-  const nome = data.toLocaleDateString('pt-BR', {
-    month: 'long',
-    year: 'numeric',
-  })
-  return nome.charAt(0).toUpperCase() + nome.slice(1)
-}
-
-function inicioDoMes(data) {
-  const resultado = new Date(data)
-  resultado.setDate(1)
-  resultado.setHours(0, 0, 0, 0)
-  return resultado
-}
-
-function adicionarMeses(data, quantidade) {
-  const resultado = new Date(data)
-  resultado.setDate(1)
-  resultado.setMonth(resultado.getMonth() + quantidade)
-  resultado.setHours(0, 0, 0, 0)
-  return resultado
-}
-
-function gerarDiasDoMes(data) {
-  const primeiroDiaDoMes = inicioDoMes(data)
-  const ultimoDiaDoMes = new Date(
-    primeiroDiaDoMes.getFullYear(),
-    primeiroDiaDoMes.getMonth() + 1,
-    0,
-  )
-
-  const primeiroDiaDoCalendario = inicioDaSemana(primeiroDiaDoMes)
-  const ultimoDiaDoCalendario = adicionarDias(inicioDaSemana(ultimoDiaDoMes), 6)
-
-  const dias = []
-  let atual = new Date(primeiroDiaDoCalendario)
-
-  while (atual <= ultimoDiaDoCalendario) {
-    dias.push(new Date(atual))
-    atual = adicionarDias(atual, 1)
-  }
-
-  return dias
+  return matrix
 }
 
 export default function AgendaPage() {
   const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
-
-  const visao = searchParams.get('visao') === 'mes' ? 'mes' : 'semana'
-
+  const { usuario } = useAuth()
+  const [visao, setVisao] = useState('semana') // 'semana' ou 'mes'
   const [agendamentos, setAgendamentos] = useState([])
-  const [carregando, setCarregando] = useState(true)
+  const [loading, setLoading] = useState(true)
 
-  const [semanaAtual, setSemanaAtual] = useState(() => inicioDaSemana(new Date()))
-  const [mesAtual, setMesAtual] = useState(() => inicioDoMes(new Date()))
-  const [diaSelecionado, setDiaSelecionado] = useState(() => new Date())
+  const [weekStart, setWeekStart] = useState(() => getMonday(new Date()))
+  const [monthDate, setMonthDate] = useState(() => {
+    const hoje = new Date()
+    return new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+  })
+  const [selectedDate, setSelectedDate] = useState(() => new Date())
 
   useEffect(() => {
-    async function carregar() {
+    async function carregarAgendamentos() {
+      setLoading(true)
       try {
         const data = await listarAgendamentosProfissional()
-        setAgendamentos(data.map(normalizar))
-      } catch {
+        if (Array.isArray(data)) {
+          setAgendamentos(data)
+        } else {
+          setAgendamentos([])
+        }
+      } catch (err) {
+        console.error('Erro ao buscar agendamentos na Agenda do profissional:', err)
         setAgendamentos([])
       } finally {
-        setCarregando(false)
+        setLoading(false)
       }
     }
-    carregar()
+
+    carregarAgendamentos()
   }, [])
 
-  const diasDaSemana = useMemo(
-    () =>
-      DIAS.map((dia) => ({
-        ...dia,
-        data: adicionarDias(semanaAtual, dia.indice === 0 ? 6 : dia.indice - 1),
-      })),
-    [semanaAtual],
-  )
-
-  const diasDoMes = useMemo(() => gerarDiasDoMes(mesAtual), [mesAtual])
-  const fimDaSemana = diasDaSemana[diasDaSemana.length - 1].data
-  const hoje = new Date()
-
-  function alterarSemana(direcao) {
-    setSemanaAtual((atual) => adicionarDias(atual, direcao * 7))
-  }
-
-  function voltarParaSemanaAtual() {
-    setSemanaAtual(inicioDaSemana(new Date()))
-  }
-
-  function alterarMes(direcao) {
-    setMesAtual((atual) => adicionarMeses(atual, direcao))
-  }
-
-  function voltarParaMesAtual() {
-    const atual = inicioDoMes(new Date())
-    setMesAtual(atual)
-    setDiaSelecionado(new Date())
-  }
-
-  function alterarVisao(novaVisao) {
-    if (novaVisao === 'mes') {
-      setSearchParams({ visao: 'mes' })
-      setMesAtual(inicioDoMes(new Date()))
-      setDiaSelecionado(new Date())
-      return
+  function goPrev() {
+    if (visao === 'semana') {
+      setWeekStart(addDays(weekStart, -7))
+    } else {
+      setMonthDate(new Date(monthDate.getFullYear(), monthDate.getMonth() - 1, 1))
     }
-    setSearchParams({})
-    setSemanaAtual(inicioDaSemana(new Date()))
   }
 
-  function toISODateLocal(data) {
-  const y = data.getFullYear()
-  const m = String(data.getMonth() + 1).padStart(2, '0')
-  const d = String(data.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
-function obterAgendamentosDoDia(data) {
-    const alvo = toISODateLocal(data)
-    return agendamentos
-      .filter((agendamento) => {
-        if (agendamento.dataAgendamento) return agendamento.dataAgendamento === alvo
-        return mesmaData(new Date(agendamento.dataHora), data)
-      })
-      .sort((a, b) => new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime())
+  function goNext() {
+    if (visao === 'semana') {
+      setWeekStart(addDays(weekStart, 7))
+    } else {
+      setMonthDate(new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1))
+    }
   }
 
-  const consultasDoDiaSelecionado = obterAgendamentosDoDia(diaSelecionado)
-  
-return (
-  <div className="px-4 py-6 md:px-8 flex flex-col gap-6 w-full">
-    {/* Header com os botões Semana/Mês alinhados à extrema direita */}
-    <div className="flex items-center justify-between w-full">
-      <div>
-        <h1 className="text-xl font-bold text-slate-800">Calendário</h1>
-        <p className="text-sm text-slate-400 mt-1">Consultas agendadas pelos pacientes.</p>
-      </div>
+  function getAgendamentosDoDia(date) {
+    if (!date) return []
+    const iso = formatDateToIso(date)
+    return agendamentos.filter((a) => {
+      const dataIso = toDataAgendamento(a) || (a.data_agendamento ? String(a.data_agendamento).slice(0, 10) : '')
+      return dataIso === iso
+    })
+  }
 
-      <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
-        <button
-          type="button"
-          onClick={() => alterarVisao('semana')}
-          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
-            visao === 'semana'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          Semana
-        </button>
-        <button
-          type="button"
-          onClick={() => alterarVisao('mes')}
-          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
-            visao === 'mes'
-              ? 'bg-blue-600 text-white shadow-sm'
-              : 'text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          Mês
-        </button>
-      </div>
-    </div>
+  function formatarHoraItem(item) {
+    if (item.horario_agendamento) {
+      return String(item.horario_agendamento).substring(0, 5)
+    }
+    const dh = toDataHora(item)
+    if (dh) {
+      return new Date(dh).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    }
+    return '--:--'
+  }
 
-    {/* Controles de navegação centralizados conforme o Figma */}
-    <div className="flex items-center justify-between border border-slate-100 bg-white rounded-2xl px-5 py-4 w-full shadow-2xs">
-      <button
-        type="button"
-        onClick={() => (visao === 'mes' ? alterarMes(-1) : alterarSemana(-1))}
-        className="w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors flex items-center justify-center cursor-pointer font-bold"
-      >
-        &lt;
-      </button>
+  function obterNomePaciente(item) {
+    return (
+      item?.Paciente?.User?.nome ||
+      item?.Paciente?.nome ||
+      item?.paciente?.nome ||
+      item?.nome_paciente ||
+      'Paciente'
+    )
+  }
 
-      <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
-        <span>{visao === 'mes' ? nomeDoMes(mesAtual) : formatarPeriodo(semanaAtual, fimDaSemana)}</span>
-        {/*<button
-          type="button"
-          onClick={visao === 'mes' ? voltarParaMesAtual : voltarParaSemanaAtual}
-          className="ml-2 px-2.5 py-1 rounded-md border border-slate-200 bg-white text-[11px] font-bold text-slate-500 hover:bg-slate-50 transition-colors cursor-pointer"
-        >
-          Hoje
-        </button>*/}
-      </div>
+  // --- SEMANA ---
+  const daysOfWeek = Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i))
+  const weekEnd = daysOfWeek[6]
+  const weekTitle = (() => {
+    const startM = weekStart.getMonth()
+    const endM = weekEnd.getMonth()
+    const year = weekEnd.getFullYear()
+    if (startM === endM) {
+      return `${weekStart.getDate()} – ${weekEnd.getDate()} de ${MESES[endM]} ${year}`
+    } else {
+      return `${weekStart.getDate()} de ${MESES[startM]} – ${weekEnd.getDate()} de ${MESES[endM]} ${year}`
+    }
+  })()
 
-      <button
-        type="button"
-        onClick={() => (visao === 'mes' ? alterarMes(1) : alterarSemana(1))}
-        className="w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors flex items-center justify-center cursor-pointer font-bold"
-      >
-        &gt;
-      </button>
-    </div>
+  // --- MÊS ---
+  const monthMatrix = generateMonthMatrix(monthDate.getFullYear(), monthDate.getMonth())
+  const monthTitle = `${MESES_COMPLETOS[monthDate.getMonth()]} ${monthDate.getFullYear()}`
+
+  const agendamentosDiaSelecionado = getAgendamentosDoDia(selectedDate)
+
+  return (
+    <div className="p-8 lg:p-12 w-full animate-[fadeIn_0.3s_ease-out]">
       
-      {carregando ? (
-        <div className="bg-white rounded-2xl border border-slate-100 p-8">
-          <LoadingSpinner size="md" className="py-8" />
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-10">
+        <div>
+          <h2 className="text-[28px] font-bold text-slate-900 tracking-tight">Calendário</h2>
+          <p className="text-[15px] text-slate-500 mt-1">Consultas agendadas pelos pacientes.</p>
         </div>
-      ) : visao === 'semana' ? (
-        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-          <div className="grid grid-cols-7 border-b border-slate-100">
-            {diasDaSemana.map((dia) => {
-              const diaEhHoje = mesmaData(dia.data, hoje)
-              return (
-                <div key={dia.data.toISOString()} className={`min-w-0 px-2 py-3 text-center border-r last:border-r-0 border-slate-100 ${diaEhHoje ? 'bg-blue-50' : ''}`}>
-                  <p className={`text-[10px] font-bold ${diaEhHoje ? 'text-blue-600' : 'text-slate-400'}`}>{dia.nome}</p>
-                  <div className={`mt-1 mx-auto w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${diaEhHoje ? 'bg-blue-600 text-white' : 'text-slate-700'}`}>
-                    {dia.data.getDate()}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
 
-          <div className="grid grid-cols-7 min-h-[360px]">
-            {diasDaSemana.map((dia) => {
-              const consultas = obterAgendamentosDoDia(dia.data)
-              const diaEhHoje = mesmaData(dia.data, hoje)
+        {/* Toggle Semana / Mês */}
+        <div className="flex items-center bg-white border border-slate-200 rounded-full p-1 shadow-sm">
+          <button
+            onClick={() => setVisao('semana')}
+            className={`px-6 py-2 text-[14px] font-bold rounded-full transition-colors cursor-pointer ${
+              visao === 'semana' ? 'bg-blue-600 text-white shadow' : 'text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            Semana
+          </button>
+          <button
+            onClick={() => setVisao('mes')}
+            className={`px-6 py-2 text-[14px] font-bold rounded-full transition-colors cursor-pointer ${
+              visao === 'mes' ? 'bg-blue-600 text-white shadow' : 'text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            Mês
+          </button>
+        </div>
+      </div>
 
+      {/* ── Navegação do Calendário ── */}
+      <div className="flex items-center justify-between mb-4">
+        <button onClick={goPrev} className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-xl shadow-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer font-bold">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+        </button>
+
+        <h3 className="text-[16px] font-bold text-slate-900">
+          {visao === 'semana' ? weekTitle : monthTitle}
+        </h3>
+
+        <button onClick={goNext} className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-xl shadow-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer font-bold">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+        </button>
+      </div>
+
+      {/* ── Grid do Calendário ── */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[450px]">
+        
+        {/* Cabeçalho dos dias da semana */}
+        <div className="grid grid-cols-7 border-b border-slate-200">
+          {visao === 'semana' ? (
+            daysOfWeek.map((dayDate, i) => {
+              const active = isSameDay(dayDate, selectedDate)
+              const count = getAgendamentosDoDia(dayDate).length
               return (
-                <div
-                  key={dia.data.toISOString()}
-                  className={`min-w-0 p-2 border-r last:border-r-0 border-slate-100 ${
-                    diaEhHoje ? 'bg-blue-50/40' : ''
+                <button
+                  key={i}
+                  onClick={() => setSelectedDate(dayDate)}
+                  className={`flex flex-col items-center justify-center py-4 border-r border-slate-200 last:border-r-0 transition-colors cursor-pointer ${
+                    active ? 'bg-blue-600' : 'hover:bg-slate-50'
                   }`}
                 >
-                  <div className="flex flex-col gap-2">
-                    {consultas.map((consulta) => (
-                      <button
-                        key={consulta.id}
-                        type="button"
-                        onClick={() =>
-                          navigate(`/profissional/consulta/${consulta.id}`, {
-                            state: { origem: 'semana' },
-                          })
-                        }
-                        className="w-full text-left rounded-lg bg-blue-50 border border-blue-100 p-2 hover:bg-blue-100 hover:border-blue-200 transition-colors"
-                      >
-                        <p className="text-xs font-bold text-blue-700">
-                          {formatarHorario(consulta.dataHora)}
-                        </p>
+                  <span className={`text-[11px] font-bold uppercase tracking-widest ${active ? 'text-white' : 'text-slate-500'}`}>
+                    {DIAS_SEMANA[i]}
+                  </span>
+                  <span className={`text-[26px] font-bold leading-none mt-1 ${active ? 'text-white' : 'text-slate-900'}`}>
+                    {dayDate.getDate()}
+                  </span>
+                  {count > 0 && (
+                    <span className={`text-[10px] font-semibold mt-1 px-1.5 py-0.2 rounded-full ${
+                      active ? 'bg-white text-blue-600' : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {count} {count === 1 ? 'consulta' : 'consultas'}
+                    </span>
+                  )}
+                </button>
+              )
+            })
+          ) : (
+            DIAS_SEMANA.map((dia, i) => (
+              <div key={i} className="flex items-center justify-center py-4 border-r border-slate-200 last:border-r-0">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{dia}</span>
+              </div>
+            ))
+          )}
+        </div>
 
-                        <p className="mt-1 text-xs font-semibold text-slate-700 truncate">
-                          {consulta.paciente.nome.split(' ')[0]}
-                        </p>
-                      </button>
-                    ))}
+        {/* Corpo do Calendário */}
+        {visao === 'semana' ? (
+          <div className="grid grid-cols-7 flex-1 min-h-[220px]">
+            {daysOfWeek.map((dayDate, i) => {
+              const active = isSameDay(dayDate, selectedDate)
+              const ags = getAgendamentosDoDia(dayDate)
+              return (
+                <div 
+                  key={i} 
+                  onClick={() => setSelectedDate(dayDate)}
+                  className={`border-r border-slate-100 last:border-r-0 p-2 cursor-pointer transition-colors ${
+                    active ? 'bg-blue-50/30' : 'hover:bg-slate-50/50'
+                  }`}
+                >
+                  <div className="flex flex-col gap-1.5 mt-1">
+                    {ags.map((ag) => {
+                      const idItem = ag.id_agendamento || ag.id
+                      const nomePac = obterNomePaciente(ag)
+                      return (
+                        <div 
+                          key={idItem} 
+                          className="bg-blue-50 border border-blue-100 rounded-lg p-1.5 text-left"
+                        >
+                          <span className="block text-[11px] font-bold text-blue-700">
+                            {formatarHoraItem(ag)}
+                          </span>
+                          <span className="block text-[11px] text-slate-700 truncate font-medium">
+                            {nomePac}
+                          </span>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )
             })}
           </div>
-        </div>
-      ) : (
-        <>
-          <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-            <div className="grid grid-cols-7 border-b border-slate-100">
-              {DIAS.map((dia) => (
-                <div
-                  key={dia.indice}
-                  className="px-2 py-3 text-center border-r last:border-r-0 border-slate-100"
-                >
-                  <p className="text-[10px] font-bold text-slate-400">
-                    {dia.nome}
-                  </p>
-                </div>
-              ))}
-            </div>
+        ) : (
+          <div className="flex flex-col flex-1">
+            {monthMatrix.map((week, rowIndex) => (
+              <div key={rowIndex} className="grid grid-cols-7 flex-1 border-b border-slate-100 last:border-b-0 min-h-[90px]">
+                {week.map((dayDate, colIndex) => {
+                  const active = isSameDay(dayDate, selectedDate)
+                  const ags = getAgendamentosDoDia(dayDate)
 
-            <div className="grid grid-cols-7">
-              {diasDoMes.map((data) => {
-                const pertenceAoMes =
-                  data.getMonth() === mesAtual.getMonth()
-
-                const diaEhHoje = mesmaData(data, hoje)
-                const diaEstaSelecionado = mesmaData(
-                  data,
-                  diaSelecionado,
-                )
-
-                const consultas = obterAgendamentosDoDia(data)
-
-                return (
-                  <button
-                    key={data.toISOString()}
-                    type="button"
-                    onClick={() => setDiaSelecionado(data)}
-                    className={`min-h-24 md:min-h-28 p-2 text-left border-r border-b border-slate-100 transition-colors ${
-                      diaEstaSelecionado
-                        ? 'bg-blue-50'
-                        : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
-                        diaEhHoje
-                          ? 'bg-blue-600 text-white'
-                          : pertenceAoMes
-                            ? 'text-slate-700'
-                            : 'text-slate-300'
+                  return (
+                    <button
+                      key={colIndex}
+                      onClick={() => dayDate && setSelectedDate(dayDate)}
+                      className={`border-r border-slate-100 last:border-r-0 p-2 text-left hover:bg-slate-50 transition-colors ${
+                        !dayDate ? 'bg-slate-50/50 cursor-default' : 'cursor-pointer'
                       }`}
                     >
-                      {data.getDate()}
-                    </div>
-
-                    <div className="mt-2 flex flex-col gap-1">
-                      {consultas.slice(0, 3).map((consulta) => (
-                        <div
-                          key={consulta.id}
-                          className="rounded-md bg-blue-50 border border-blue-100 px-1.5 py-1"
-                        >
-                          <p className="text-[10px] font-bold text-blue-700 truncate">
-                            {formatarHorario(consulta.dataHora)}
-                          </p>
-
-                          <p className="text-[10px] text-slate-600 truncate">
-                            {consulta.paciente.nome.split(' ')[0]}
-                          </p>
-                        </div>
-                      ))}
-
-                      {consultas.length > 3 && (
-                        <p className="text-[10px] font-semibold text-blue-600">
-                          +{consultas.length - 3} consulta(s)
-                        </p>
+                      {dayDate && (
+                        <>
+                          <div className="flex justify-start pt-1 pl-2">
+                            <span className={`flex items-center justify-center w-7 h-7 rounded-full text-sm font-bold ${
+                              active ? 'bg-blue-600 text-white' : 'text-slate-900'
+                            }`}>
+                              {dayDate.getDate()}
+                            </span>
+                          </div>
+                          
+                          {/* Badges de agendamentos reais do dia */}
+                          {ags.length > 0 && (
+                            <div className="mt-2 pl-1 flex flex-wrap gap-1">
+                              {ags.slice(0, 3).map((ag) => (
+                                <span 
+                                  key={ag.id_agendamento || ag.id} 
+                                  className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-semibold rounded"
+                                >
+                                  {formatarHoraItem(ag)}
+                                </span>
+                              ))}
+                              {ags.length > 3 && (
+                                <span className="text-[10px] text-slate-400 font-bold">
+                                  +{ags.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </>
                       )}
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-            <div className="px-4 py-4 border-b border-slate-100">
-              <h2 className="text-sm font-bold text-slate-700">
-                {formatarDataCompleta(diaSelecionado)} —{' '}
-                {consultasDoDiaSelecionado.length} CONSULTA(S)
-              </h2>
-            </div>
-
-            {consultasDoDiaSelecionado.length === 0 ? (
-              <div className="px-4 py-8 text-sm text-slate-400">
-                Nenhuma consulta neste dia.
+                    </button>
+                  )
+                })}
               </div>
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {consultasDoDiaSelecionado.map((consulta) => (
-                  <button
-                    key={consulta.id}
-                    type="button"
-                    onClick={() =>
-                      navigate(`/profissional/consulta/${consulta.id}`, {
-                        state: { origem: 'mes' },
-                      })
-                    }
-                    className="w-full px-4 py-4 text-left hover:bg-slate-50 transition-colors"
-                  >
-                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                      <div className="flex flex-col gap-1">
-                        <p className="text-sm font-bold text-slate-700">
-                          {formatarHorario(consulta.dataHora)}
-                        </p>
-
-                        <p className="text-sm font-semibold text-slate-700">
-                          {consulta.paciente.nome}
-                        </p>
-
-                        <p className="text-xs text-slate-400">
-                          {consulta.especialidade}
-                        </p>
-                      </div>
-
-                      <span
-                        className={`self-start md:self-auto px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
-                          consulta.status === 'confirmado'
-                            ? 'bg-emerald-50 text-emerald-600'
-                            : consulta.status === 'concluido'
-                              ? 'bg-blue-50 text-blue-600'
-                              : 'bg-slate-100 text-slate-500'
-                        }`}
-                      >
-                        {consulta.status}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+            ))}
           </div>
-        </>
-      )}
+        )}
+
+      </div>
+
+      {/* ── Consultas do Dia Selecionado ── */}
+      <div className="mt-8">
+        <h3 className="text-base font-bold text-slate-900 mb-4">
+          Consultas em {selectedDate.toLocaleDateString('pt-BR')} ({agendamentosDiaSelecionado.length})
+        </h3>
+
+        {loading ? (
+          <p className="text-sm text-slate-500">Carregando...</p>
+        ) : agendamentosDiaSelecionado.length === 0 ? (
+          <p className="text-sm text-slate-500 bg-white border border-slate-200 rounded-xl p-6 text-center">
+            Nenhuma consulta agendada para este dia.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {agendamentosDiaSelecionado.map((ag) => {
+              const idItem = ag.id_agendamento || ag.id
+              const nomePac = obterNomePaciente(ag)
+              const statusTexto = ag.status || 'Confirmado'
+              return (
+                <div 
+                  key={idItem} 
+                  className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between shadow-sm"
+                >
+                  <div>
+                    <p className="text-[15px] font-bold text-slate-900">
+                      {nomePac}
+                    </p>
+                    <p className="text-[13px] text-slate-500 mt-0.5">
+                      {ag.Especialidade?.nome || 'Consulta Médica'} · às {formatarHoraItem(ag)}
+                    </p>
+                  </div>
+                  <span className={`px-3 py-1 text-xs font-bold rounded-full capitalize ${
+                    statusTexto.toLowerCase() === 'cancelado' 
+                      ? 'bg-red-100 text-red-700' 
+                      : statusTexto.toLowerCase() === 'concluido'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-green-100 text-green-700'
+                  }`}>
+                    {statusTexto}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+      
+      {/* Botão flutuante de ajuda */}
+      <button className="fixed bottom-6 right-6 w-12 h-12 bg-slate-800 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-slate-900 transition-colors">
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+        </svg>
+      </button>
+
     </div>
   )
 }

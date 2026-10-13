@@ -119,7 +119,6 @@ export default function PacienteLayout() {
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-bold text-slate-800 truncate">{nomeExibicao}</p>
-                <p className="text-xs text-slate-500 truncate">{emailExibicao}</p>
               </div>
             </div>
 
@@ -173,8 +172,7 @@ export default function PacienteLayout() {
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold text-slate-800 truncate">{nomeExibicao}</p>
-                <p className="text-[11px] text-slate-400 font-medium truncate mt-0.5">{emailExibicao}</p>
+                <p className="text-[14px] font-bold text-slate-800 truncate">{nomeExibicao}</p>
               </div>
             </div>
           </div>
