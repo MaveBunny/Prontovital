@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import ProfissionalLayout from './components/ProfissionalLayout'
 import AgendaPage from './pages/AgendaPage'
 import AgendamentosPage from './pages/AgendamentosPage'
+import PerfilPage from './pages/PerfilPage'
 
 export default function ProfissionalRoutes() {
   return (
@@ -12,6 +13,7 @@ export default function ProfissionalRoutes() {
         <Route index element={<Navigate to="agenda" replace />} />
         <Route path="agenda" element={<AgendaPage />} />
         <Route path="agendamentos" element={<AgendamentosPage />} />
+        <Route path="perfil" element={<PerfilPage />} />
         <Route path="consulta/*" element={<Navigate to="/profissional/agenda" replace />} />
       </Route>
     </Routes>

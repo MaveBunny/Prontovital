@@ -10,7 +10,7 @@ function normalizarBaseUrl(url) {
 }
 
 const api = axios.create({
-  baseURL: normalizarBaseUrl(import.meta.env.VITE_API_URL),
+  baseURL: normalizarBaseUrl(import.meta.env.VITE_API_URL || 'https://prontovital-api.onrender.com'),
   headers: { 'Content-Type': 'application/json' },
 })
 

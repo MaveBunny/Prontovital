@@ -25,6 +25,7 @@ const Input = forwardRef(function Input(
             ? 'border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-500/20'
             : 'border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20'
           }
+          [&::-ms-reveal]:hidden [&::-ms-clear]:hidden
           ${className}
         `}
         {...props}
