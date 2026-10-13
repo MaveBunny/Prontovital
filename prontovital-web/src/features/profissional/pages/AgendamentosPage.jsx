@@ -5,9 +5,15 @@ import { listarAgendamentosProfissional, toDataHora } from '../../../lib/profiss
 
 function normalizarAgendamento(ag) {
   const dataHora = new Date(toDataHora(ag))
+  const nomePaciente =
+    ag?.Paciente?.User?.nome ||
+    ag?.Paciente?.nome ||
+    ag?.paciente?.nome ||
+    ag?.nome_paciente ||
+    'Paciente'
   return {
-    id: String(ag.id_agendamento),
-    paciente: ag.Paciente.User.nome,
+    id: String(ag.id_agendamento ?? ag.id),
+    paciente: nomePaciente,
     dataHora,
     status: ag.status,
   }

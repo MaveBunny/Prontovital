@@ -1,6 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../shared/hooks/useAuth'
-import { PROFISSIONAL } from '../../../lib/profissionalAgendaApi'
 
 const navItems = [
   {
@@ -24,8 +23,18 @@ const navItems = [
 ]
 
 export default function ProfissionalLayout() {
-  const { logout } = useAuth()
+  const { usuario, logout } = useAuth()
   const navigate = useNavigate()
+
+  const nomeProfissional = usuario?.nome || 'Profissional'
+  const emailProfissional = usuario?.email || 'profissional@prontovital.com'
+  const iniciaisProfissional = nomeProfissional
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase() || 'DR'
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex font-sans">
@@ -41,12 +50,12 @@ export default function ProfissionalLayout() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center shrink-0">
                 <span className="text-sm font-bold text-teal-600 tracking-wider">
-                  DC
+                  {iniciaisProfissional}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold text-slate-800 truncate">{PROFISSIONAL?.nome || 'Profissional'}</p>
-                <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">{PROFISSIONAL?.email || 'email@clinica.com'}</p>
+                <p className="text-[13px] font-bold text-slate-800 truncate">{nomeProfissional}</p>
+                <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">{emailProfissional}</p>
               </div>
             </div>
           </div>

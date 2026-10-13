@@ -9,13 +9,17 @@ import {
 
 function normalizarConsulta(ag) {
   return {
-    id: String(ag.id_agendamento),
+    id: String(ag.id_agendamento ?? ag.id),
     dataHora: toDataHora(ag),
     status: ag.status,
-    especialidade: ag.Especialidade.nome,
-    clinica: ag.Clinica.nome,
+    especialidade: ag?.Especialidade?.nome || ag?.especialidade || 'Clínica geral',
+    clinica: ag?.Clinica?.nome || ag?.clinica || '—',
     paciente: {
-      nome: ag.Paciente.User.nome,
+      nome:
+        ag?.Paciente?.User?.nome ||
+        ag?.Paciente?.nome ||
+        ag?.paciente?.nome ||
+        'Paciente',
     },
     triagem: ag.PreTriagem
       ? {

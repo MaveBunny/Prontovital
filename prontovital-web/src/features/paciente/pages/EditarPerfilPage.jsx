@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../../../components/shared/Button'
 import Input from '../../../components/shared/Input'
@@ -14,17 +14,40 @@ export default function EditarPerfilPage() {
   const perfilInicial = getPerfilDinamico()
 
   const [form, setForm] = useState({
-    nome: paciente?.nome || perfilInicial?.nome || '',
-    email: paciente?.email || perfilInicial?.email || '',
-    telefone: paciente?.telefone || perfilInicial?.telefone || '',
-    endereco: paciente?.endereco || perfilInicial?.endereco || '',
-    cidade: paciente?.cidade || perfilInicial?.cidade || '',
-    estado: paciente?.estado || perfilInicial?.estado || '',
-    cpf: paciente?.cpf || perfilInicial?.cpf || '',
-    data_nascimento: paciente?.data_nascimento || perfilInicial?.data_nascimento || '',
-    sexo: paciente?.sexo || perfilInicial?.sexo || 'Masculino',
-    observacoes: paciente?.observacoes || perfilInicial?.observacoes || '',
+    nome: '',
+    email: '',
+    telefone: '',
+    endereco: '',
+    cidade: '',
+    estado: '',
+    cpf: '',
+    data_nascimento: '',
+    sexo: 'Masculino',
+    observacoes: '',
   })
+
+  // Preenche o form quando o perfil carregar do backend (evita campos vazios)
+  useEffect(() => {
+    const base = paciente || perfilInicial
+    if (!base) return
+    setForm((prev) => ({
+      nome: prev.nome || base.nome || '',
+      email: prev.email || base.email || '',
+      telefone: prev.telefone || base.telefone || '',
+      endereco: prev.endereco || base.endereco || '',
+      cidade: prev.cidade || base.cidade || '',
+      estado: prev.estado || base.estado || '',
+      cpf: prev.cpf || base.cpf || '',
+      data_nascimento: prev.data_nascimento
+        ? prev.data_nascimento
+        : base.data_nascimento
+          ? String(base.data_nascimento).split('T')[0]
+          : '',
+      sexo: prev.sexo !== 'Masculino' && prev.sexo ? prev.sexo : base.sexo || 'Masculino',
+      observacoes: prev.observacoes || base.observacoes || '',
+    }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paciente])
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
   const [sucesso, setSucesso] = useState(false)

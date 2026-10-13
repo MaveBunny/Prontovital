@@ -3,15 +3,24 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import LoadingSpinner from '../../../components/shared/LoadingSpinner'
 import {
   listarAgendamentosProfissional,
+  toDataAgendamento,
   toDataHora,
 } from '../../../lib/profissionalAgendaApi'
 
 function normalizar(ag) {
+  const nomePaciente =
+    ag?.Paciente?.User?.nome ||
+    ag?.Paciente?.nome ||
+    ag?.paciente?.nome ||
+    ag?.nome_paciente ||
+    'Paciente'
   return {
-    id: String(ag.id_agendamento),
-    paciente: { nome: ag.Paciente.User.nome },
-    especialidade: ag.Especialidade.nome,
+    id: String(ag.id_agendamento ?? ag.id),
+    paciente: { nome: nomePaciente },
+    especialidade:
+      ag?.Especialidade?.nome || ag?.especialidade || 'Clínica geral',
     dataHora: toDataHora(ag),
+    dataAgendamento: toDataAgendamento(ag),
     status: ag.status,
   }
 }
@@ -201,9 +210,20 @@ export default function AgendaPage() {
     setSemanaAtual(inicioDaSemana(new Date()))
   }
 
-  function obterAgendamentosDoDia(data) {
+  function toISODateLocal(data) {
+  const y = data.getFullYear()
+  const m = String(data.getMonth() + 1).padStart(2, '0')
+  const d = String(data.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function obterAgendamentosDoDia(data) {
+    const alvo = toISODateLocal(data)
     return agendamentos
-      .filter((agendamento) => mesmaData(new Date(agendamento.dataHora), data))
+      .filter((agendamento) => {
+        if (agendamento.dataAgendamento) return agendamento.dataAgendamento === alvo
+        return mesmaData(new Date(agendamento.dataHora), data)
+      })
       .sort((a, b) => new Date(a.dataHora).getTime() - new Date(b.dataHora).getTime())
   }
 

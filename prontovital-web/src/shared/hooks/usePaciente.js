@@ -34,10 +34,10 @@ export function usePaciente() {
   }, [carregarPerfil])
 
   const atualizar = useCallback(async (payload) => {
-    if (!paciente?.id) return
     setCarregando(true)
     try {
-      const data = await editarPerfil(paciente.id, payload)
+      const id = paciente?.id || paciente?.id_user || paciente?.id_paciente
+      const data = await editarPerfil(id, payload)
       setPaciente(data)
       return data
     } finally {

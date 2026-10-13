@@ -7,7 +7,7 @@ import { useAuth } from '../../../shared/hooks/useAuth'
 export default function LoginPage() {
   const { login, carregando } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ loginId: '', senha: '' })
+  const [form, setForm] = useState({ email: '', senha: '' })
   const [erro, setErro] = useState('')
 
   function handleChange(e) {
@@ -20,9 +20,9 @@ export default function LoginPage() {
     e.preventDefault()
     setErro('')
     try {
-      const data = await login({ email: form.loginId, senha: form.senha })
+      const data = await login({ email: form.email, senha: form.senha })
       const tipo = data.usuario?.perfil || data.usuario?.tipo || 'paciente'
-      if (tipo === 'profissional') return navigate('/profissional/dashboard')
+      if (tipo === 'profissional') return navigate('/profissional/agenda')
       if (tipo === 'clinica') return navigate('/clinica/dashboard')
       if (tipo === 'admin') return navigate('/admin/agendamentos')
       navigate('/paciente/pre-triagem')
@@ -38,11 +38,11 @@ export default function LoginPage() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <Input
-        label="E-mail ou CPF"
-        name="loginId"
+        label="E-mail"
+        name="email"
         type="text"
-        placeholder="email@exemplo.com ou 000.000.000-00"
-        value={form.loginId}
+        placeholder="email@exemplo.com"
+        value={form.email}
         onChange={handleChange}
         required
       />

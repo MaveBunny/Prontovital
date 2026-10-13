@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import api from '../../../lib/api'
 import { agendarConsulta } from '../../../lib/agendamentosApi'
-import { MOCK_PROFISSIONAIS } from '../../../lib/profissionaisApi'
-
-const HORARIOS_PADRAO = [
-  '08:00', '09:00', '09:30', '10:30', '11:15',
-  '14:00', '14:45', '15:30', '16:15', '17:00'
-]
 
 export default function ModalAgendarConsulta({
   aberto,
@@ -21,11 +15,15 @@ export default function ModalAgendarConsulta({
   const [dataConsulta, setDataConsulta] = useState(() => {
     const amanha = new Date()
     amanha.setDate(amanha.getDate() + 1)
+    // Se amanhã for sábado (6) ou domingo (0), avança para segunda-feira
+    if (amanha.getDay() === 6) amanha.setDate(amanha.getDate() + 2)
+    if (amanha.getDay() === 0) amanha.setDate(amanha.getDate() + 1)
     return amanha.toISOString().split('T')[0]
   })
   const [horariosDisponiveis, setHorariosDisponiveis] = useState([])
-  const [horarioSelecionado, setHorarioSelecionado] = useState('09:30')
+  const [horarioSelecionado, setHorarioSelecionado] = useState('')
   const [carregandoHorarios, setCarregandoHorarios] = useState(false)
+  const [carregandoProfissionais, setCarregandoProfissionais] = useState(false)
   const [resumoTriagem, setResumoTriagem] = useState(resumoTriagemInicial)
   const [salvando, setSalvando] = useState(false)
   const [sucesso, setSucesso] = useState(false)
@@ -37,83 +35,108 @@ export default function ModalAgendarConsulta({
   }, [aberto])
 
   async function carregarProfissionais() {
+    setCarregandoProfissionais(true)
     try {
       const { data } = await api.get('/profissionais')
       if (Array.isArray(data) && data.length > 0) {
-        const formatados = data.map(p => ({
-          id: p.id_profissional,
-          id_profissional: p.id_profissional,
-          nome: p.User?.nome || 'Médico(a)',
-          especialidade: p.Especialidade?.nome || 'Clínica Geral',
-          clinica: p.Clinicas && p.Clinicas.length > 0 ? (p.Clinicas[0].User?.nome || 'Clínica') : 'Clínica ProntoVital',
-          id_clinica: p.Clinicas && p.Clinicas.length > 0 ? p.Clinicas[0].id_clinica : 1,
-          iniciais: (p.User?.nome || 'DR').substring(0, 2).toUpperCase()
-        }))
+        const formatados = data.map((p) => {
+          const clinicaObj = p.Clinicas?.[0]
+          return {
+            id: p.id_profissional || p.id,
+            id_profissional: p.id_profissional || p.id,
+            nome: p.User?.nome || p.nome || 'Médico(a)',
+            especialidade: p.Especialidade?.nome || p.especialidade || 'Clínica Geral',
+            clinica: clinicaObj?.User?.nome || p.clinica || 'Clínica Saúde Vital',
+            id_clinica: clinicaObj?.id_clinica || p.id_clinica || 1,
+            iniciais: (p.User?.nome || p.nome || 'DR')
+              .split(' ')
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((n) => n[0])
+              .join('')
+              .toUpperCase() || 'DR',
+          }
+        })
         setProfissionais(formatados)
-        if (!medicoPreSelecionado) {
+        if (!medicoPreSelecionado && formatados.length > 0) {
           setMedicoId(formatados[0].id)
         }
       } else {
-        setProfissionais(MOCK_PROFISSIONAIS)
+        setProfissionais([])
       }
     } catch {
-      setProfissionais(MOCK_PROFISSIONAIS)
+      setProfissionais([])
+    } finally {
+      setCarregandoProfissionais(false)
     }
   }
 
+  const lista = profissionais
+  const medico =
+    medicoPreSelecionado ||
+    lista.find((p) => String(p.id) === String(medicoId)) ||
+    lista[0] ||
+    null
+
   // Carrega horários disponíveis quando médico ou data mudarem
   useEffect(() => {
-    const idProf = medicoPreSelecionado?.id_profissional || medicoPreSelecionado?.id || medicoId
+    const idProf = medico?.id_profissional || medico?.id || medicoId
     if (!idProf || !dataConsulta) return
 
     async function carregarSlots() {
       setCarregandoHorarios(true)
+      setErro('')
       try {
-        const { data } = await api.get(`/profissionais/${idProf}/disponibilidade?data=${dataConsulta}`)
+        const { data } = await api.get(
+          `/profissionais/${idProf}/disponibilidade?data=${dataConsulta}`
+        )
         if (Array.isArray(data) && data.length > 0) {
           setHorariosDisponiveis(data)
           setHorarioSelecionado(data[0])
         } else {
           setHorariosDisponiveis([])
+          setHorarioSelecionado('')
         }
-      } catch {
+      } catch (err) {
+        console.error('Erro ao buscar horários disponíveis:', err)
         setHorariosDisponiveis([])
+        setHorarioSelecionado('')
       } finally {
         setCarregandoHorarios(false)
       }
     }
 
     carregarSlots()
-  }, [medicoPreSelecionado, medicoId, dataConsulta])
+  }, [medico?.id, medico?.id_profissional, medicoId, dataConsulta])
 
   if (!aberto) return null
 
-  const lista = profissionais.length > 0 ? profissionais : MOCK_PROFISSIONAIS
-  const medico =
-    medicoPreSelecionado ||
-    lista.find((p) => String(p.id) === String(medicoId)) ||
-    lista[0]
-
   async function handleConfirmar(e) {
     e.preventDefault()
-    setSalvando(true)
     setErro('')
 
+    if (!medico) {
+      setErro('Nenhum médico selecionado.')
+      return
+    }
+
+    if (!horarioSelecionado) {
+      setErro('Por favor, selecione um horário disponível.')
+      return
+    }
+
+    setSalvando(true)
+
     try {
-      const dataHoraIso = `${dataConsulta}T${horarioSelecionado}:00`
       await agendarConsulta({
-        id_profissional: medico?.id_profissional || medico?.id,
-        id_clinica: medico?.id_clinica || 1,
-        medicoNome: medico?.nome || 'Dr. Médico ProntoVital',
-        especialidade: medico?.especialidade || especialidadePreSelecionada || 'Clínica Geral',
-        clinicaNome: medico?.clinica || 'Clínica Saúde Total',
-        dataHora: dataHoraIso,
+        id_profissional: medico.id_profissional || medico.id,
+        id_clinica: medico.id_clinica || 1,
         data_agendamento: dataConsulta,
         horario_agendamento: horarioSelecionado,
-        resumoTriagem:
+        observacao:
           resumoTriagem ||
           resumoTriagemInicial ||
-          'Consulta solicitada via plataforma ProntoVital.',
+          'Consulta agendada via plataforma ProntoVital.',
       })
 
       setSucesso(true)
@@ -121,17 +144,19 @@ export default function ModalAgendarConsulta({
         setSucesso(false)
         if (onSucesso) onSucesso()
         onFechar()
-      }, 1200)
+      }, 1000)
     } catch (err) {
-      console.error('Erro ao agendar consulta:', err)
-      const msg = err.response?.data?.erro || 'Não foi possível realizar o agendamento. Tente novamente.'
+      console.error('Erro ao agendar consulta na API:', err)
+      const msg =
+        err.response?.data?.erro ||
+        err.response?.data?.mensagem ||
+        err.message ||
+        'Não foi possível realizar o agendamento. Tente novamente.'
       setErro(msg)
     } finally {
       setSalvando(false)
     }
   }
-
-  const horariosOpcoes = horariosDisponiveis.length > 0 ? horariosDisponiveis : HORARIOS_PADRAO
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-[fadeIn_0.2s_ease-out]">
@@ -159,7 +184,7 @@ export default function ModalAgendarConsulta({
               </svg>
             </div>
             <h4 className="text-lg font-bold text-slate-900">Consulta Agendada!</h4>
-            <p className="text-sm text-slate-500 mt-1">Seu agendamento foi confirmado com sucesso.</p>
+            <p className="text-sm text-slate-500 mt-1">Seu agendamento foi salvo com sucesso no sistema.</p>
           </div>
         ) : (
           <form onSubmit={handleConfirmar} className="mt-5 space-y-4">
@@ -170,17 +195,25 @@ export default function ModalAgendarConsulta({
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   Médico / Especialista
                 </label>
-                <select
-                  value={medicoId}
-                  onChange={(e) => setMedicoId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                >
-                  {lista.map((prof) => (
-                    <option key={prof.id} value={prof.id}>
-                      {prof.nome} — {prof.especialidade} ({prof.clinica})
-                    </option>
-                  ))}
-                </select>
+                {carregandoProfissionais ? (
+                  <p className="text-xs text-slate-400 py-2">Carregando profissionais...</p>
+                ) : lista.length === 0 ? (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+                    Nenhum profissional disponível para agendamento no momento.
+                  </div>
+                ) : (
+                  <select
+                    value={medicoId}
+                    onChange={(e) => setMedicoId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  >
+                    {lista.map((prof) => (
+                      <option key={prof.id} value={prof.id}>
+                        {prof.nome} — {prof.especialidade} ({prof.clinica})
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             ) : (
               <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-3.5 flex items-center gap-3">
@@ -212,55 +245,64 @@ export default function ModalAgendarConsulta({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Horário {carregandoHorarios && '(verificando...)'}
+                  Horário {carregandoHorarios && '(verificando disponibilidade...)'}
                 </label>
-                <select
-                  value={horarioSelecionado}
-                  onChange={(e) => setHorarioSelecionado(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                >
-                  {horariosOpcoes.map((h) => (
-                    <option key={h} value={h}>
-                      {h}
-                    </option>
-                  ))}
-                </select>
+                {carregandoHorarios ? (
+                  <div className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-400">
+                    Buscando horários disponíveis...
+                  </div>
+                ) : horariosDisponiveis.length === 0 ? (
+                  <div className="px-3.5 py-2 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 font-medium leading-tight">
+                    Sem horários livres nesta data. Escolha outro dia.
+                  </div>
+                ) : (
+                  <select
+                    value={horarioSelecionado}
+                    onChange={(e) => setHorarioSelecionado(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  >
+                    {horariosDisponiveis.map((h) => (
+                      <option key={h} value={h}>
+                        {h}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
 
-            {/* Resumo da Triagem / Sintomas */}
+            {/* Resumo ou Queixa */}
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Resumo da Triagem / Observações Clínicas
+                Observação / Sintomas
               </label>
               <textarea
+                rows={2}
                 value={resumoTriagem}
                 onChange={(e) => setResumoTriagem(e.target.value)}
-                placeholder="Descreva brevemente seus sintomas ou motivo da consulta..."
-                rows={3}
-                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none leading-relaxed"
+                placeholder="Descreva brevemente o motivo da consulta..."
+                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
             </div>
 
             {erro && (
-              <p className="text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-xl">
+              <p className="text-xs text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-200 animate-[fadeIn_0.2s_ease]">
                 {erro}
               </p>
             )}
 
-            {/* Ações */}
-            <div className="flex items-center gap-3 pt-2">
+            <div className="pt-2 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={onFechar}
-                className="flex-1 py-2.5 border border-slate-200 text-slate-700 font-bold text-sm rounded-xl hover:bg-slate-50 transition-colors"
+                className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                disabled={salvando}
-                className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-blue-500/20 disabled:opacity-60"
+                disabled={salvando || (!medicoPreSelecionado && lista.length === 0) || !horarioSelecionado}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
               >
                 {salvando ? 'Agendando...' : 'Confirmar Agendamento'}
               </button>
