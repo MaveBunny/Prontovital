@@ -82,12 +82,12 @@ export default function MeuPerfilPage() {
       {/* ── Card Principal do Perfil (conforme Imagem 2) ── */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-6 md:p-8 mb-6">
         
-        {/* Header do Usuário: Avatar, Nome, Papel */}
+        {/* Header do Usuário: Avatar, Nome, Papel + Editar */}
         <div className="flex items-center gap-4 mb-6">
           <div className="w-14 h-14 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
             {iniciais}
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <h2 className="text-[17px] font-bold text-slate-900 leading-tight">
               {nomeExibicao}
             </h2>
@@ -95,6 +95,16 @@ export default function MeuPerfilPage() {
               Paciente
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => navigate('/paciente/editar-perfil')}
+            className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer shadow-2xs"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+            </svg>
+            Editar perfil
+          </button>
         </div>
 
         {/* Divisor */}

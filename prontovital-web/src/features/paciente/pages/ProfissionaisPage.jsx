@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { buscarProfissionais, MOCK_PROFISSIONAIS } from '../../../lib/profissionaisApi'
+import { buscarProfissionais } from '../../../lib/profissionaisApi'
 import ModalAgendarConsulta from '../components/ModalAgendarConsulta'
 
 const ESPECIALIDADES = [
@@ -14,11 +14,10 @@ const ESPECIALIDADES = [
 export default function ProfissionaisPage() {
   const navigate = useNavigate()
 
-  const [profissionais, setProfissionais] = useState(MOCK_PROFISSIONAIS)
-  // Busca local — sem query params de URL (filtro por clínica removido; backend não suporta).
+  const [profissionais, setProfissionais] = useState([])
   const [busca, setBusca] = useState('')
   const [especialidadeSelecionada, setEspecialidadeSelecionada] = useState('Todos')
-  const [carregando, setCarregando] = useState(false)
+  const [carregando, setCarregando] = useState(true)
 
   // Modal Agendamento
   const [modalAberto, setModalAberto] = useState(false)
@@ -29,11 +28,10 @@ export default function ProfissionaisPage() {
       setCarregando(true)
       try {
         const dados = await buscarProfissionais()
-        if (dados && dados.length > 0) {
-          setProfissionais(dados)
-        }
-      } catch {
-        setProfissionais(MOCK_PROFISSIONAIS)
+        setProfissionais(Array.isArray(dados) ? dados : [])
+      } catch (err) {
+        console.error('Erro ao carregar profissionais:', err)
+        setProfissionais([])
       } finally {
         setCarregando(false)
       }
@@ -107,21 +105,26 @@ export default function ProfissionaisPage() {
 
       </div>
 
-      {/* ── Grid de Cards de Profissionais (2 colunas como na imagem 3) ── */}
+      {/* ── Grid de Cards de Profissionais ── */}
       {carregando ? (
-        <div className="flex items-center justify-center py-20">
-          <svg className="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
+        <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+          <svg className="animate-spin h-8 w-8 text-blue-600 mb-3" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
+          <span className="text-sm">Carregando profissionais da rede...</span>
         </div>
       ) : profissionaisFiltrados.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center max-w-xl">
-          <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+          <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3 text-2xl">
             👨‍⚕️
           </div>
           <h4 className="text-base font-bold text-slate-800">Nenhum profissional encontrado</h4>
-          <p className="text-xs text-slate-400 mt-1">Tente remover os filtros ou buscar por outra especialidade.</p>
+          <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+            {profissionais.length === 0
+              ? 'Não há profissionais cadastrados na rede no momento. Novos especialistas cadastrados aparecerão aqui em tempo real.'
+              : 'Nenhum profissional corresponde aos filtros de busca selecionados.'}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl">

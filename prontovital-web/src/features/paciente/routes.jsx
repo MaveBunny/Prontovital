@@ -6,23 +6,24 @@ import ProfissionaisPage from './pages/ProfissionaisPage'
 import MeusAgendamentosPage from './pages/MeusAgendamentosPage'
 import HistoricoTriagensPage from './pages/HistoricoTriagensPage'
 import MeuPerfilPage from './pages/MeuPerfilPage'
+import EditarPerfilPage from './pages/EditarPerfilPage'
 
 export default function PacienteRoutes() {
   return (
     <Routes>
       <Route element={<PacienteLayout />}>
-        {/* Redirecionamento inicial: Clínicas (Pré-Triagem oculta — sem backend) */}
-        <Route index element={<Navigate to="clinicas" replace />} />
-        {/* Rotas futuras mantidas para histórico — ocultas do menu, sem link visível */}
+        {/* Redirecionamento inicial: Tela Inicial (Busca rápida + Pré-triagem com IA) */}
+        <Route index element={<Navigate to="pre-triagem" replace />} />
         <Route path="pre-triagem" element={<PreTriagemPage />} />
         <Route path="clinicas" element={<ClinicasPage />} />
         <Route path="profissionais" element={<ProfissionaisPage />} />
         <Route path="agendamentos" element={<MeusAgendamentosPage />} />
         <Route path="historico-triagens" element={<HistoricoTriagensPage />} />
         <Route path="perfil" element={<MeuPerfilPage />} />
+        <Route path="editar-perfil" element={<EditarPerfilPage />} />
         {/* Compatibilidade de rotas antigas */}
-        <Route path="dashboard" element={<Navigate to="clinicas" replace />} />
-        <Route path="triagem" element={<Navigate to="clinicas" replace />} />
+        <Route path="dashboard" element={<Navigate to="pre-triagem" replace />} />
+        <Route path="triagem" element={<Navigate to="pre-triagem" replace />} />
       </Route>
     </Routes>
   )

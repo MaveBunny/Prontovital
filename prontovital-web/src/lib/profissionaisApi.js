@@ -1,98 +1,46 @@
 import api from './api'
 
-export const MOCK_PROFISSIONAIS = [
-  {
-    id: 1,
-    id_profissional: 1,
-    nome: 'Dra. Camila Lins',
-    iniciais: 'DC',
-    especialidade: 'Ortopedia',
-    conselho: 'CRM',
-    registro: 'PE - 45821',
-    registro_profissional: '45821',
-    uf_registro: 'PE',
-    clinica: 'Clínica Saúde Ilha do Leite',
-    id_clinica: 1,
-    telefone: '(81) 3333-1111',
-    email: 'dra.camila@prontovital.com',
-  },
-  {
-    id: 2,
-    id_profissional: 2,
-    nome: 'Dr. Rafael Menezes',
-    iniciais: 'DR',
-    especialidade: 'Cardiologia',
-    conselho: 'CRM',
-    registro: 'PE - 32100',
-    registro_profissional: '32100',
-    uf_registro: 'PE',
-    clinica: 'Centro Médico Boa Viagem',
-    id_clinica: 2,
-    telefone: '(81) 3333-2222',
-    email: 'dr.rafael@prontovital.com',
-  },
-  {
-    id: 3,
-    id_profissional: 3,
-    nome: 'Dra. Ana Beatriz Sousa',
-    iniciais: 'DA',
-    especialidade: 'Neurologia',
-    conselho: 'CRM',
-    registro: 'PE - 61234',
-    registro_profissional: '61234',
-    uf_registro: 'PE',
-    clinica: 'Clínica Saúde Ilha do Leite',
-    id_clinica: 1,
-    telefone: '(81) 3333-1111',
-    email: 'dra.anabeatriz@prontovital.com',
-  },
-  {
-    id: 4,
-    id_profissional: 4,
-    nome: 'Dr. Henrique Torres',
-    iniciais: 'DH',
-    especialidade: 'Clínica Geral',
-    conselho: 'CRM',
-    registro: 'PE - 28900',
-    registro_profissional: '28900',
-    uf_registro: 'PE',
-    clinica: 'Policlínica Madalena',
-    id_clinica: 3,
-    telefone: '(81) 3333-3333',
-    email: 'dr.henrique@prontovital.com',
-  },
-]
-
-/** GET /profissionais ou /api/profissionais — Buscar Profissionais */
+/** GET /profissionais — Buscar Profissionais reais da API */
 export async function buscarProfissionais(params = {}) {
   try {
-    const { data } = await api.get('/profissionais', { params }).catch(() => api.get('/api/profissionais', { params }))
-    if (Array.isArray(data) && data.length > 0) {
-      return data.map((p, idx) => ({
+    const { data } = await api.get('/profissionais', { params })
+    if (!Array.isArray(data)) return []
+
+    return data.map((p, idx) => {
+      const nome = p.User?.nome || p.nome || 'Médico(a)'
+      const iniciais = nome
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase() || 'DR'
+
+      const clinicaObj = p.Clinicas?.[0]
+      const clinicaNome = clinicaObj?.User?.nome || p.clinica || 'Clínica ProntoVital'
+      const idClinica = clinicaObj?.id_clinica || p.id_clinica || null
+
+      return {
         id: p.id_profissional || p.id || idx + 1,
-        id_profissional: p.id_profissional || p.id || idx + 1,
-        nome: p.User?.nome || p.nome || 'Médico(a)',
-        iniciais: (p.User?.nome || p.nome || 'DR')
-          .split(' ')
-          .filter(Boolean)
-          .slice(0, 2)
-          .map((n) => n[0])
-          .join('')
-          .toUpperCase(),
-        especialidade: p.especialidade || 'Clínica Geral',
+        id_profissional: p.id_profissional || p.id,
+        nome,
+        iniciais,
+        especialidade: p.Especialidade?.nome || p.especialidade || 'Clínica Geral',
         conselho: p.conselho || 'CRM',
-        registro: p.registro || `${p.uf_registro || 'PE'} - ${p.registro_profissional || '00000'}`,
-        registro_profissional: p.registro_profissional || '00000',
-        uf_registro: p.uf_registro || 'PE',
-        clinica: p.clinica || 'Clínica ProntoVital',
-        id_clinica: p.id_clinica || 1,
+        registro: p.registro_profissional
+          ? `${p.conselho || 'CRM'}: ${p.uf_registro ? p.uf_registro + ' - ' : ''}${p.registro_profissional}`
+          : (p.registro || 'Registro não informado'),
+        registro_profissional: p.registro_profissional || '',
+        uf_registro: p.uf_registro || '',
+        clinica: clinicaNome,
+        id_clinica: idClinica,
         telefone: p.User?.telefone || p.telefone || '',
         email: p.User?.email || p.email || '',
-      }))
-    }
-    return MOCK_PROFISSIONAIS
-  } catch {
-    return MOCK_PROFISSIONAIS
+      }
+    })
+  } catch (error) {
+    console.error('Erro ao buscar profissionais da API:', error)
+    return []
   }
 }
 
