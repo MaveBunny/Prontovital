@@ -1,204 +1,449 @@
-import { useEffect, useState } from 'react'
-import Badge from '../../../components/shared/Badge'
-import Button from '../../../components/shared/Button'
-import Input from '../../../components/shared/Input'
-import LoadingSpinner from '../../../components/shared/LoadingSpinner'
-import { buscarProfissionais, cadastrarProfissional } from '../../../lib/profissionaisApi'
-import { listarClinicas } from '../../../lib/clinicasApi'
-
-const MOCK = [
-  { id: '1', nome: 'Dr. Carlos Lima', cpf: '123.456.789-00', conselho: 'CRM', registro: '12345-SP', especialidade: 'Cardiologia', telefone: '(11) 98765-4321', email: 'carlos@exemplo.com', clinica: 'Clínica Saúde Total', status: 'ativo' },
-  { id: '2', nome: 'Dra. Fernanda Melo', cpf: '098.765.432-11', conselho: 'CRM', registro: '67890-RJ', especialidade: 'Dermatologia', telefone: '(21) 91234-5678', email: 'fernanda@exemplo.com', clinica: 'Centro Médico Vida', status: 'pendente' },
-]
+import { useState, useEffect } from 'react'
+import api from '../../../lib/api'
 
 export default function ProfissionaisPage() {
-  const [lista, setLista] = useState([])
-  const [clinicasDisponiveis, setClinicasDisponiveis] = useState(['Clínica Saúde Total', 'Centro Médico Vida'])
-  const [carregando, setCarregando] = useState(true)
-  const [filtro, setFiltro] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [erro, setErro] = useState('')
+  const [profissionais, setProfissionais] = useState([])
+  const [clinicasDisponiveis, setClinicasDisponiveis] = useState([])
+  const [busca, setBusca] = useState('')
+  
+  // Formulário de Cadastro / Vinculação (Figma print 2)
   const [mostraForm, setMostraForm] = useState(false)
   const [salvando, setSalvando] = useState(false)
-
   const [form, setForm] = useState({
-    nome: '', cpf: '', conselho: 'CRM', registro: '', especialidade: '', telefone: '', email: '', clinica: '', status: 'ativo'
+    nome: '',
+    crm: '',
+    email: '',
+    senha: '',
+    telefone: '(81) 98888-0000',
+    id_clinica: '',
+    status: 'Ativo'
   })
 
-  useEffect(() => {
-    async function carregar() {
-      try {
-        const [dadosProfissionais, dadosClinicas] = await Promise.all([
-          buscarProfissionais().catch(() => MOCK),
-          listarClinicas().catch(() => [])
-        ])
-        setLista(dadosProfissionais.length ? dadosProfissionais : MOCK)
-        if (dadosClinicas.length) {
-          setClinicasDisponiveis(dadosClinicas.map(c => c.nome))
-        }
-      } catch {
-        setLista(MOCK)
-      } finally {
-        setCarregando(false)
-      }
-    }
-    carregar()
-  }, [])
+  // Modal de Exclusão
+  const [modalExcluirAberto, setModalExcluirAberto] = useState(false)
+  const [itemParaExcluir, setItemParaExcluir] = useState(null)
+  const [excluindo, setExcluindo] = useState(false)
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target
-    setForm(p => ({ ...p, [name]: type === 'checkbox' ? (checked ? 'ativo' : 'inativo') : value }))
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      carregarDados(busca)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [busca])
+
+  async function carregarDados(termo = '') {
+    setLoading(true)
+    setErro('')
+    try {
+      const params = termo.trim() ? { busca: termo.trim() } : {}
+      const [resProfissionais, resClinicas] = await Promise.all([
+        api.get('/profissionais', { params }),
+        api.get('/clinicas')
+      ])
+
+      const listaClinicas = Array.isArray(resClinicas.data) ? resClinicas.data.map(c => ({
+        id_clinica: c.id_clinica,
+        nome: c.User?.nome || `Clínica #${c.id_clinica}`
+      })) : []
+      setClinicasDisponiveis(listaClinicas)
+
+      if (listaClinicas.length > 0 && !form.id_clinica) {
+        setForm(prev => ({ ...prev, id_clinica: String(listaClinicas[0].id_clinica) }))
+      }
+
+      if (Array.isArray(resProfissionais.data)) {
+        const formatados = resProfissionais.data.map((p) => {
+          const clinicaVinculada = p.Clinicas && p.Clinicas.length > 0
+            ? p.Clinicas[0].User?.nome || `Clínica #${p.Clinicas[0].id_clinica}`
+            : 'Sem clínica vinculada'
+
+          const crmFormatado = p.uf_registro && p.registro_profissional
+            ? `${p.uf_registro}-${p.registro_profissional}`
+            : (p.registro_profissional || 'Não informado')
+
+          return {
+            id: p.id_profissional,
+            id_profissional: p.id_profissional,
+            nome: p.User?.nome || 'Médico(a)',
+            crm: crmFormatado,
+            clinica: clinicaVinculada,
+            email: p.User?.email || '',
+            status: p.User?.ativo !== false ? 'Ativo' : 'Inativo',
+            iniciais: getIniciais(p.User?.nome)
+          }
+        })
+        setProfissionais(formatados)
+      } else {
+        setProfissionais([])
+      }
+    } catch (err) {
+      console.error('Erro ao carregar dados:', err)
+      setErro('Não foi possível carregar os profissionais do servidor.')
+      setProfissionais([])
+    } finally {
+      setLoading(false)
+    }
   }
 
+  function getIniciais(nome) {
+    if (!nome) return 'PR'
+    const limpo = nome.replace(/^(Dr\.|Dra\.)\s+/i, '').trim()
+    const partes = limpo.split(' ').filter(Boolean)
+    if (partes.length >= 2) {
+      return (partes[0][0] + partes[1][0]).toUpperCase()
+    }
+    return limpo.substring(0, 2).toUpperCase()
+  }
+
+  // Cadastro de Novo Profissional e Vinculação à Clínica
   async function handleCadastrar(e) {
     e.preventDefault()
     setSalvando(true)
     try {
-      // Mock de salvamento
-      await new Promise(r => setTimeout(r, 800));
-      setLista(prev => [{ id: String(Date.now()), ...form }, ...prev])
+      // Divide CRM ex: PE-12345 ou apenas 12345
+      const crmLimpo = form.crm.trim()
+      let uf = 'PE'
+      let registro = crmLimpo
+      if (crmLimpo.includes('-')) {
+        const [ufPart, regPart] = crmLimpo.split('-')
+        uf = ufPart.trim().toUpperCase()
+        registro = regPart.trim()
+      }
+
+      const payload = {
+        nome: form.nome,
+        email: form.email,
+        senha: form.senha,
+        endereco: 'Endereço não informado',
+        cidade: 'Recife',
+        estado: 'PE',
+        telefone: form.telefone || '(81) 98888-0000',
+        perfil: 'profissional',
+        profissional: {
+          cpf: String(Date.now()).slice(-11), // CPF mock temporário único se não fornecido
+          conselho: 'CRM',
+          registro_profissional: registro,
+          uf_registro: uf
+        }
+      }
+
+      const { data: usuarioCriado } = await api.post('/usuarios', payload)
+      const idProfissionalCriado = usuarioCriado.id_profissional
+
+      // Se selecionou uma clínica para vincular, chama a rota oficial PATCH
+      if (form.id_clinica && idProfissionalCriado) {
+        try {
+          await api.patch(`/clinicas/${form.id_clinica}/profissionais/${idProfissionalCriado}`)
+        } catch (vinculoErr) {
+          console.warn('Profissional criado, mas erro ao vincular clínica:', vinculoErr)
+        }
+      }
+
+      await carregarDados()
       resetForm()
-    } catch {
-      setLista(prev => [{ id: String(Date.now()), ...form }, ...prev])
-      resetForm()
+    } catch (err) {
+      console.error('Erro ao cadastrar profissional:', err)
+      const msg = err.response?.data?.mensagem || err.response?.data?.erro || 'Erro ao cadastrar profissional no banco de dados.'
+      alert(msg)
     } finally {
       setSalvando(false)
     }
   }
 
   function resetForm() {
-    setForm({ nome: '', cpf: '', conselho: 'CRM', registro: '', especialidade: '', telefone: '', email: '', clinica: '', status: 'ativo' })
+    setForm({
+      nome: '',
+      crm: '',
+      email: '',
+      senha: '',
+      telefone: '(81) 98888-0000',
+      id_clinica: clinicasDisponiveis.length > 0 ? String(clinicasDisponiveis[0].id_clinica) : '',
+      status: 'Ativo'
+    })
     setMostraForm(false)
   }
 
-  async function handleAprovar(id) {
-    setLista((prev) => prev.map((p) => p.id === id ? { ...p, status: 'ativo' } : p))
+  // Exclusão
+  function abrirModalExcluir(id) {
+    setItemParaExcluir(id)
+    setModalExcluirAberto(true)
   }
 
-  const filtrados = lista.filter((p) =>
-    p.nome.toLowerCase().includes(filtro.toLowerCase()) ||
-    p.especialidade?.toLowerCase().includes(filtro.toLowerCase()) ||
-    p.clinica?.toLowerCase().includes(filtro.toLowerCase())
-  )
+  function fecharModalExcluir() {
+    setModalExcluirAberto(false)
+    setItemParaExcluir(null)
+  }
+
+  async function confirmarExclusao() {
+    if (!itemParaExcluir) return
+    setExcluindo(true)
+    try {
+      setProfissionais(prev => prev.filter(p => p.id !== itemParaExcluir))
+      fecharModalExcluir()
+    } finally {
+      setExcluindo(false)
+    }
+  }
 
   return (
-    <div className="p-6 flex flex-col gap-6 w-full max-w-5xl mx-auto animate-[fadeIn_0.3s_ease-in-out]">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-800">Profissionais de Saúde</h1>
-          <p className="text-sm text-slate-500 font-medium mt-1">{lista.length} profissional(is) cadastrado(s) na plataforma</p>
-        </div>
-        <Button size="md" onClick={() => { if(mostraForm) resetForm(); else setMostraForm(true) }} className="shadow-sm">
-          {mostraForm ? 'Cancelar' : '+ Cadastrar Profissional'}
-        </Button>
-      </div>
-
-      {/* Formulário de Cadastro */}
-      {mostraForm && (
-        <form onSubmit={handleCadastrar} className="bg-white rounded-3xl border border-slate-100 p-8 shadow-xl shadow-slate-100 flex flex-col gap-6">
-          <div className="border-b border-slate-100 pb-4 mb-2">
-            <h3 className="text-lg font-bold text-slate-800">Novo Profissional</h3>
-            <p className="text-sm text-slate-500">Cadastre um profissional e vincule a uma clínica.</p>
+    <>
+      <div className="p-4 sm:p-6 md:p-8 lg:p-12 w-full animate-[fadeIn_0.3s_ease-out]">
+        
+        {/* ── Header ── */}
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6 sm:mb-8">
+          <div>
+            <h2 className="text-[24px] sm:text-[28px] font-bold text-slate-900 tracking-tight">Profissionais</h2>
+            <p className="text-[14px] sm:text-[15px] text-slate-500 mt-1">Vincule médicos às clínicas parceiras.</p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Input label="Nome Completo" name="nome" type="text" placeholder="Ex: Dr. Carlos Lima" value={form.nome} onChange={handleInputChange} required />
-            <Input label="CPF" name="cpf" type="text" placeholder="000.000.000-00" value={form.cpf} onChange={handleInputChange} required />
+          <button 
+            onClick={() => setMostraForm(prev => !prev)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-[14px] transition-colors shadow-sm flex items-center gap-2 w-full sm:w-auto justify-center"
+          >
+            <span>+</span> Novo Profissional
+          </button>
+        </div>
+
+        {erro && <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6">{erro}</div>}
+
+        {/* ── Formulário Inline: Vincular Profissional (Figma Print 2) ── */}
+        {mostraForm && (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 mb-8 animate-[fadeIn_0.2s_ease-out]">
+            <h3 className="text-[12px] font-bold text-slate-500 uppercase tracking-widest mb-6">
+              Vincular Profissional
+            </h3>
             
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold text-slate-700">Conselho</label>
-                <select name="conselho" value={form.conselho} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
-                  <option value="CRM">CRM (Médico)</option>
-                  <option value="COREN">COREN (Enfermeiro)</option>
-                  <option value="CRO">CRO (Odontologia)</option>
-                  <option value="CRP">CRP (Psicologia)</option>
+            <form onSubmit={handleCadastrar} className="flex flex-col gap-5">
+              {/* Linha 1 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                    Nome Completo
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={form.nome}
+                    onChange={e => setForm({ ...form, nome: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-[14px] text-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all placeholder-slate-400"
+                    placeholder="Dr. Nome Sobrenome"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                    CRM
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={form.crm}
+                    onChange={e => setForm({ ...form, crm: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-[14px] text-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all placeholder-slate-400"
+                    placeholder="PE-00000"
+                  />
+                </div>
+              </div>
+
+              {/* Linha 2 (E-mail e Senha) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                    E-mail de Acesso
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={form.email}
+                    onChange={e => setForm({ ...form, email: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-[14px] text-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all placeholder-slate-400"
+                    placeholder="medico@prontovital.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                    Senha de Acesso
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={form.senha}
+                    onChange={e => setForm({ ...form, senha: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-[14px] text-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all placeholder-slate-400"
+                    placeholder="Mínimo 6 caracteres"
+                  />
+                </div>
+              </div>
+
+              {/* Linha 3 (Clínica Vinculada) */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                  Clínica Vinculada
+                </label>
+                <select
+                  value={form.id_clinica}
+                  onChange={e => setForm({ ...form, id_clinica: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-[14px] text-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all cursor-pointer appearance-none pr-10 relative bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_12px_center] bg-[length:16px]"
+                >
+                  {clinicasDisponiveis.length > 0 ? (
+                    clinicasDisponiveis.map((c) => (
+                      <option key={c.id_clinica} value={c.id_clinica}>{c.nome}</option>
+                    ))
+                  ) : (
+                    <option value="">Nenhuma clínica cadastrada</option>
+                  )}
                 </select>
               </div>
-              <Input label="Registro Profissional" name="registro" type="text" placeholder="Ex: 12345-SP" value={form.registro} onChange={handleInputChange} required />
-            </div>
 
-            <Input label="Especialidade" name="especialidade" type="text" placeholder="Ex: Cardiologia, Pediatria" value={form.especialidade} onChange={handleInputChange} required />
-            
-            <Input label="Telefone" name="telefone" type="text" placeholder="(00) 00000-0000" value={form.telefone} onChange={handleInputChange} required />
-            <Input label="E-mail de Contato" name="email" type="email" placeholder="medico@exemplo.com" value={form.email} onChange={handleInputChange} required />
-            
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-bold text-slate-700">Clínica Vinculada</label>
-              <select name="clinica" value={form.clinica} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
-                <option value="">Selecione uma clínica...</option>
-                {clinicasDisponiveis.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
+              {/* Botões à esquerda como no Figma */}
+              <div className="mt-2 flex flex-row gap-3">
+                <button
+                  type="submit"
+                  disabled={salvando}
+                  className="px-6 py-2.5 rounded-lg bg-[#2563eb] text-white font-bold text-[14px] hover:bg-blue-700 transition-colors flex items-center justify-center min-w-[120px]"
+                >
+                  {salvando ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 'Cadastrar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="px-6 py-2.5 rounded-lg border border-[#2563eb] text-[#2563eb] font-bold text-[14px] hover:bg-blue-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
-            <div className="flex flex-col justify-center mt-2">
-              <label className="block text-sm font-bold text-slate-700 mb-2">Status do Profissional</label>
-              <label className="flex items-center cursor-pointer">
-                <div className="relative">
-                  <input type="checkbox" name="status" className="sr-only" checked={form.status === 'ativo'} onChange={handleInputChange} />
-                  <div className={`block w-12 h-7 rounded-full transition-colors ${form.status === 'ativo' ? 'bg-primary' : 'bg-slate-300'}`}></div>
-                  <div className={`dot absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform ${form.status === 'ativo' ? 'transform translate-x-5' : ''}`}></div>
+        {/* ── Busca (Parâmetro nativo do back-end: ?busca=) ── */}
+        <div className="mb-6 sm:mb-8">
+          <div className="relative w-full">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por nome do profissional ou clínica vinculada..."
+              className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-[14px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
+            />
+          </div>
+        </div>
+
+        {/* ── Lista de Profissionais (Figma Print 1) ── */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {profissionais.length > 0 ? (
+              profissionais.map((item) => (
+                <div 
+                  key={item.id} 
+                  className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 hover:shadow-md transition-shadow overflow-hidden"
+                >
+                  
+                  {/* Lado Esquerdo: Avatar e Info */}
+                  <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                    {/* Iniciais */}
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                      <span className="text-xs sm:text-sm font-bold text-blue-600 tracking-wider">
+                        {item.iniciais || getIniciais(item.nome)}
+                      </span>
+                    </div>
+                    
+                    {/* Textos */}
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-[14px] sm:text-[15px] font-bold text-slate-900 truncate">
+                        {item.nome}
+                      </h3>
+                      <p className="text-[12px] sm:text-[13px] text-slate-500 font-medium truncate mt-0.5">
+                        CRM: {item.crm}
+                      </p>
+                      <p className="text-[12px] sm:text-[13px] text-slate-400 truncate mt-0.5">
+                        {item.clinica}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Lado Direito: Status e Ações */}
+                  <div className="flex flex-row items-center justify-between md:justify-end gap-3 sm:gap-4 w-full md:w-auto pt-3 md:pt-0 border-t border-slate-100 md:border-t-0">
+                    {/* Badge Ativo */}
+                    <span className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-[12px] font-bold uppercase tracking-wider bg-green-50 text-green-600">
+                      {item.status}
+                    </span>
+                    
+                    {/* Lixeira */}
+                    <button 
+                      onClick={() => abrirModalExcluir(item.id)}
+                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                      title="Excluir Profissional"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+
                 </div>
-                <div className="ml-3 text-sm font-semibold text-slate-700">
-                  {form.status === 'ativo' ? 'Ativo na Plataforma' : 'Inativo / Pendente'}
-                </div>
-              </label>
+              ))
+            ) : (
+              <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                <p className="text-slate-500 font-medium">Nenhum profissional encontrado.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Modal de Exclusão (Padrão de Alta Fidelidade) ── */}
+      {modalExcluirAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+          <div 
+            className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-[zoomIn_0.2s_ease-out]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 md:p-8">
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Remover profissional?</h3>
+              <p className="text-sm text-slate-500 mb-8 leading-relaxed">
+                Tem certeza que deseja desvincular este profissional da rede? Esta ação não pode ser desfeita.
+              </p>
+              
+              <div className="flex flex-col-reverse sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={fecharModalExcluir}
+                  disabled={excluindo}
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-blue-200 text-blue-600 font-bold text-sm hover:bg-blue-50 transition-colors disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmarExclusao}
+                  disabled={excluindo}
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#dc2626] text-white font-bold text-sm hover:bg-[#b91c1c] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {excluindo ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Remover profissional
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-          
-          <div className="flex justify-end pt-4 mt-2 border-t border-slate-100 gap-3">
-            <Button type="button" variant="outline" onClick={resetForm}>Cancelar</Button>
-            <Button type="submit" loading={salvando} className="px-8 shadow-md">Salvar Cadastro</Button>
-          </div>
-        </form>
-      )}
-
-      {/* Busca */}
-      <input
-        type="text"
-        placeholder="Buscar por nome, especialidade ou clínica..."
-        value={filtro}
-        onChange={(e) => setFiltro(e.target.value)}
-        className="w-full px-5 py-4 rounded-2xl border border-slate-200 text-sm bg-white outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 shadow-sm"
-      />
-
-      {carregando ? (
-        <LoadingSpinner size="md" className="py-12" />
-      ) : (
-        <div className="flex flex-col gap-3">
-          {filtrados.length === 0 ? (
-             <div className="p-8 text-center text-slate-500 bg-white rounded-2xl border border-slate-100">Nenhum profissional encontrado.</div>
-          ) : filtrados.map((p) => (
-            <div key={p.id} className="bg-white rounded-2xl border border-slate-100 p-5 flex items-center gap-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0 border border-blue-100">
-                <span className="text-sm font-bold text-blue-600">
-                  {p.nome.split(' ').filter(n => n.length > 2).slice(0, 2).map(n => n[0]).join('').toUpperCase()}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div>
-                  <p className="text-sm font-bold text-slate-800">{p.nome}</p>
-                  <p className="text-xs text-slate-500 font-medium">{p.especialidade} · {p.conselho} {p.registro}</p>
-                </div>
-                <div className="hidden md:flex flex-col justify-center">
-                  <p className="text-xs text-slate-500"><span className="font-semibold text-slate-700">Clínica:</span> {p.clinica}</p>
-                  <p className="text-xs text-slate-500"><span className="font-semibold text-slate-700">Contato:</span> {p.telefone}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <span className={`text-xs font-bold px-3 py-1 rounded-full ${p.status === 'ativo' ? 'bg-emerald-100 text-emerald-700' : p.status === 'pendente' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}`}>
-                  {p.status.toUpperCase()}
-                </span>
-                {p.status === 'pendente' && (
-                  <Button size="sm" variant="secondary" onClick={() => handleAprovar(p.id)}>
-                    Aprovar
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
         </div>
       )}
-    </div>
+    </>
   )
 }

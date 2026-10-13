@@ -7,52 +7,20 @@ import api from './api'
  */
 export async function login(credentials) {
   try {
-    const { data } = await api
-      .post('/auth/login', credentials)
-      .catch(() => api.post('/api/auth/login', credentials))
+    const { data } = await api.post('/auth/login', credentials)
 
     if (data?.token) {
+      const usuarioComEmail = {
+        ...data.usuario,
+        email: data.usuario?.email || credentials.email
+      }
       localStorage.setItem('@prontovital:token', data.token)
-      localStorage.setItem('@prontovital:user', JSON.stringify(data.usuario))
-      return data
+      localStorage.setItem('@prontovital:user', JSON.stringify(usuarioComEmail))
+      return { ...data, usuario: usuarioComEmail }
     }
-    throw new Error('Resposta de login invalida do servidor.')
+    throw new Error('Resposta de login inválida do servidor.')
   } catch (error) {
-    if (error.response?.data) {
-      throw error
-    }
-
-    const emailOuCpf = credentials.email || 'usuario@email.com'
-    
-    // Fallback inteligente para testes (Paciente, Clinica, etc)
-    let tipoSimulado = 'paciente'
-    if (emailOuCpf.toLowerCase().includes('clinica')) {
-      tipoSimulado = 'clinica'
-    } else if (emailOuCpf.toLowerCase().includes('admin')) {
-      tipoSimulado = 'admin'
-    } else if (emailOuCpf.toLowerCase().includes('medico') || emailOuCpf.toLowerCase().includes('profissional')) {
-      tipoSimulado = 'profissional'
-    }
-
-    const mockUser = {
-      id: String(Date.now()),
-      id_user: Date.now(),
-      nome: emailOuCpf.includes('@')
-        ? emailOuCpf.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
-        : (tipoSimulado === 'clinica' ? 'Clínica Saúde Ilha do Leite' : 'Usuário Teste'),
-      email: emailOuCpf.includes('@') ? emailOuCpf : `${emailOuCpf}@email.com`,
-      tipo: tipoSimulado,
-      ...(tipoSimulado === 'paciente' && {
-        paciente: {
-          cpf: emailOuCpf.replace(/\D/g, '') || '12345678900',
-          observacoes: 'Sem observações.',
-        }
-      })
-    }
-
-    localStorage.setItem('@prontovital:token', 'mock-token-offline')
-    localStorage.setItem('@prontovital:user', JSON.stringify(mockUser))
-    return { token: 'mock-token-offline', usuario: mockUser }
+    throw error
   }
 }
 

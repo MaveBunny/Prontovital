@@ -21,10 +21,10 @@ export default function LoginPage() {
     setErro('')
     try {
       const data = await login({ email: form.loginId, senha: form.senha })
-      const tipo = data.usuario?.tipo || 'paciente'
+      const tipo = data.usuario?.perfil || data.usuario?.tipo || 'paciente'
       if (tipo === 'profissional') return navigate('/profissional/dashboard')
       if (tipo === 'clinica') return navigate('/clinica/dashboard')
-      if (tipo === 'admin') return navigate('/admin/clinicas')
+      if (tipo === 'admin') return navigate('/admin/agendamentos')
       navigate('/paciente/pre-triagem')
     } catch (err) {
       setErro(

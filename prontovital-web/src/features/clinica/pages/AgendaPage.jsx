@@ -1,4 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useAuth } from '../../../shared/hooks/useAuth'
+import api from '../../../lib/api'
 
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 const MESES_COMPLETOS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
@@ -24,15 +26,20 @@ function isSameDay(d1, d2) {
          d1.getFullYear() === d2.getFullYear()
 }
 
-// Gera a matriz (array de semanas) para o mês atual
+function formatDateToIso(d) {
+  if (!d) return ''
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function generateMonthMatrix(year, month) {
   const matrix = []
   const firstDay = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0).getDate()
   
-  // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
   let firstDayOfWeek = firstDay.getDay()
-  // Ajusta para Segunda=0 ... Domingo=6
   firstDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1
 
   let currentDay = 1
@@ -55,19 +62,42 @@ function generateMonthMatrix(year, month) {
 }
 
 export default function AgendaPage() {
+  const { usuario } = useAuth()
   const [visao, setVisao] = useState('mes') // 'semana' ou 'mes'
+  const [agendamentos, setAgendamentos] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // O início da semana visível na tela
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()))
-  // O mês visível na tela
   const [monthDate, setMonthDate] = useState(() => {
     const hoje = new Date()
     return new Date(hoje.getFullYear(), hoje.getMonth(), 1)
   })
-
-  // O dia selecionado (ativo)
   const [selectedDate, setSelectedDate] = useState(() => new Date())
-  
+
+  const idClinica = usuario?.id_clinica || usuario?.id || usuario?.id_user
+
+  useEffect(() => {
+    async function carregarAgendamentos() {
+      if (!idClinica) return
+      setLoading(true)
+      try {
+        const { data } = await api.get(`/clinicas/${idClinica}/agendamentos`)
+        if (Array.isArray(data)) {
+          setAgendamentos(data)
+        } else {
+          setAgendamentos([])
+        }
+      } catch (err) {
+        console.error('Erro ao buscar agendamentos na Agenda:', err)
+        setAgendamentos([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    carregarAgendamentos()
+  }, [idClinica])
+
   function goPrev() {
     if (visao === 'semana') {
       setWeekStart(addDays(weekStart, -7))
@@ -82,6 +112,12 @@ export default function AgendaPage() {
     } else {
       setMonthDate(new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1))
     }
+  }
+
+  function getAgendamentosDoDia(date) {
+    if (!date) return []
+    const iso = formatDateToIso(date)
+    return agendamentos.filter(a => a.data_agendamento === iso)
   }
 
   // --- SEMANA ---
@@ -101,6 +137,8 @@ export default function AgendaPage() {
   // --- MÊS ---
   const monthMatrix = generateMonthMatrix(monthDate.getFullYear(), monthDate.getMonth())
   const monthTitle = `${MESES_COMPLETOS[monthDate.getMonth()]} ${monthDate.getFullYear()}`
+
+  const agendamentosDiaSelecionado = getAgendamentosDoDia(selectedDate)
 
   return (
     <div className="p-8 lg:p-12 w-full animate-[fadeIn_0.3s_ease-out]">
@@ -160,6 +198,7 @@ export default function AgendaPage() {
           {visao === 'semana' ? (
             daysOfWeek.map((dayDate, i) => {
               const active = isSameDay(dayDate, selectedDate)
+              const count = getAgendamentosDoDia(dayDate).length
               return (
                 <button
                   key={i}
@@ -174,6 +213,13 @@ export default function AgendaPage() {
                   <span className={`text-[26px] font-bold leading-none mt-1 ${active ? 'text-white' : 'text-slate-900'}`}>
                     {dayDate.getDate()}
                   </span>
+                  {count > 0 && (
+                    <span className={`text-[10px] font-semibold mt-1 px-1.5 py-0.2 rounded-full ${
+                      active ? 'bg-white text-blue-600' : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {count} {count === 1 ? 'consulta' : 'consultas'}
+                    </span>
+                  )}
                 </button>
               )
             })
@@ -188,29 +234,48 @@ export default function AgendaPage() {
 
         {/* Corpo do Calendário */}
         {visao === 'semana' ? (
-          <div className="grid grid-cols-7 flex-1">
+          <div className="grid grid-cols-7 flex-1 min-h-[220px]">
             {daysOfWeek.map((dayDate, i) => {
               const active = isSameDay(dayDate, selectedDate)
+              const ags = getAgendamentosDoDia(dayDate)
               return (
-                <div key={i} className={`border-r border-slate-100 last:border-r-0 p-2 transition-colors ${active ? 'bg-blue-50/20' : ''}`}></div>
+                <div 
+                  key={i} 
+                  onClick={() => setSelectedDate(dayDate)}
+                  className={`border-r border-slate-100 last:border-r-0 p-2 cursor-pointer transition-colors ${
+                    active ? 'bg-blue-50/30' : 'hover:bg-slate-50/50'
+                  }`}
+                >
+                  <div className="flex flex-col gap-1.5 mt-1">
+                    {ags.map((ag) => (
+                      <div key={ag.id_agendamento} className="bg-blue-50 border border-blue-100 rounded-lg p-1.5 text-left">
+                        <span className="block text-[11px] font-bold text-blue-700">
+                          {ag.horario_agendamento?.substring(0, 5)}
+                        </span>
+                        <span className="block text-[11px] text-slate-700 truncate font-medium">
+                          {ag.Paciente?.User?.nome || 'Paciente'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )
             })}
           </div>
         ) : (
           <div className="flex flex-col flex-1">
             {monthMatrix.map((week, rowIndex) => (
-              <div key={rowIndex} className="grid grid-cols-7 flex-1 border-b border-slate-100 last:border-b-0 min-h-[100px]">
+              <div key={rowIndex} className="grid grid-cols-7 flex-1 border-b border-slate-100 last:border-b-0 min-h-[90px]">
                 {week.map((dayDate, colIndex) => {
                   const active = isSameDay(dayDate, selectedDate)
-                  // Mocks para ilustrar os horários do dia atual
-                  const isMockDay = dayDate && isSameDay(dayDate, new Date())
+                  const ags = getAgendamentosDoDia(dayDate)
 
                   return (
                     <button
                       key={colIndex}
                       onClick={() => dayDate && setSelectedDate(dayDate)}
                       className={`border-r border-slate-100 last:border-r-0 p-2 text-left hover:bg-slate-50 transition-colors ${
-                        !dayDate ? 'bg-slate-50/50' : ''
+                        !dayDate ? 'bg-slate-50/50 cursor-default' : 'cursor-pointer'
                       }`}
                     >
                       {dayDate && (
@@ -223,11 +288,22 @@ export default function AgendaPage() {
                             </span>
                           </div>
                           
-                          {/* Badges de agendamentos no mês */}
-                          {isMockDay && (
+                          {/* Badges de agendamentos reais do dia */}
+                          {ags.length > 0 && (
                             <div className="mt-2 pl-1 flex flex-wrap gap-1">
-                              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-semibold rounded">08:00</span>
-                              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-semibold rounded">09:00</span>
+                              {ags.slice(0, 3).map((ag) => (
+                                <span 
+                                  key={ag.id_agendamento} 
+                                  className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-semibold rounded"
+                                >
+                                  {ag.horario_agendamento?.substring(0, 5)}
+                                </span>
+                              ))}
+                              {ags.length > 3 && (
+                                <span className="text-[10px] text-slate-400 font-bold">
+                                  +{ags.length - 3}
+                                </span>
+                              )}
                             </div>
                           )}
                         </>
@@ -240,6 +316,39 @@ export default function AgendaPage() {
           </div>
         )}
 
+      </div>
+
+      {/* ── Consultas do Dia Selecionado ── */}
+      <div className="mt-8">
+        <h3 className="text-base font-bold text-slate-900 mb-4">
+          Consultas em {selectedDate.toLocaleDateString('pt-BR')} ({agendamentosDiaSelecionado.length})
+        </h3>
+
+        {loading ? (
+          <p className="text-sm text-slate-500">Carregando...</p>
+        ) : agendamentosDiaSelecionado.length === 0 ? (
+          <p className="text-sm text-slate-500 bg-white border border-slate-200 rounded-xl p-6 text-center">
+            Nenhuma consulta agendada para este dia.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {agendamentosDiaSelecionado.map((ag) => (
+              <div key={ag.id_agendamento} className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
+                <div>
+                  <p className="text-[15px] font-bold text-slate-900">
+                    {ag.Paciente?.User?.nome || 'Paciente'}
+                  </p>
+                  <p className="text-[13px] text-slate-500 mt-0.5">
+                    {ag.Profissional?.User?.nome || 'Médico(a)'} · às {ag.horario_agendamento?.substring(0, 5)}
+                  </p>
+                </div>
+                <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full capitalize">
+                  {ag.status || 'Confirmado'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       
       {/* Botão flutuante de ajuda */}

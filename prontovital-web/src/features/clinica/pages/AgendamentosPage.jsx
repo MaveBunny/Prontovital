@@ -1,44 +1,79 @@
-import React, { useState } from 'react'
-
-const MOCK_AGENDAMENTOS = [
-  {
-    id: 1,
-    iniciais: 'SC',
-    paciente: 'Severino Cavalcanti',
-    medico: 'Dra. Camila Lins',
-    data: '15/08/2026 às 14:00',
-    status: 'Concluído',
-    statusStyle: 'bg-blue-100 text-blue-700'
-  },
-  {
-    id: 2,
-    iniciais: 'MD',
-    paciente: 'Maria das Graças Lima',
-    medico: 'Dra. Camila Lins',
-    data: '15/09/2026 às 08:00',
-    status: 'Confirmado',
-    statusStyle: 'bg-green-100 text-green-700'
-  },
-  {
-    id: 3,
-    iniciais: 'JP',
-    paciente: 'João Pedro Alves',
-    medico: 'Dra. Camila Lins',
-    data: '15/09/2026 às 09:00',
-    status: 'Confirmado',
-    statusStyle: 'bg-green-100 text-green-700'
-  }
-]
+import React, { useState, useEffect } from 'react'
+import { useAuth } from '../../../shared/hooks/useAuth'
+import api from '../../../lib/api'
 
 export default function AgendamentosPage() {
-  const [agendamentos, setAgendamentos] = useState(MOCK_AGENDAMENTOS)
-  const [busca, setBusca] = useState('')
-  const [filtroMedico, setFiltroMedico] = useState('Todos os médicos')
-  const [filtroStatus, setFiltroStatus] = useState('Todos os status')
+  const { usuario } = useAuth()
+  const [agendamentos, setAgendamentos] = useState([])
+  const [loading, setLoading] = useState(true)
   
   // Modals state
   const [modalAberto, setModalAberto] = useState(null) // 'cancelar' | 'remover' | null
   const [itemSelecionado, setItemSelecionado] = useState(null)
+
+  const idClinica = usuario?.id_clinica || usuario?.id || usuario?.id_user
+
+  useEffect(() => {
+    carregarAgendamentos()
+  }, [idClinica])
+
+  async function carregarAgendamentos() {
+    setLoading(true)
+    try {
+      const { data } = await api.get(`/clinicas/${idClinica}/agendamentos`)
+      if (Array.isArray(data)) {
+        const formatados = data.map((item) => {
+          const nomePaciente = item.Paciente?.User?.nome || 'Paciente'
+          const partesNome = nomePaciente.split(' ')
+          const iniciais = partesNome.length >= 2 
+            ? (partesNome[0][0] + partesNome[1][0]).toUpperCase()
+            : nomePaciente.substring(0, 2).toUpperCase()
+
+          let dataFormatada = item.data_agendamento || ''
+          if (dataFormatada.includes('-')) {
+            const [ano, mes, dia] = dataFormatada.split('-')
+            dataFormatada = `${dia}/${mes}/${ano}`
+          }
+          const horarioFormatado = item.horario_agendamento?.substring(0, 5) || '--:--'
+
+          const statusNormalizado = item.status?.toLowerCase() || 'confirmado'
+          let statusStyle = 'bg-slate-100 text-slate-700'
+          let statusTexto = 'Pendente'
+
+          if (statusNormalizado === 'confirmado') {
+            statusStyle = 'bg-green-100 text-green-700'
+            statusTexto = 'Confirmado'
+          } else if (statusNormalizado === 'concluido' || statusNormalizado === 'concluído') {
+            statusStyle = 'bg-blue-100 text-blue-700'
+            statusTexto = 'Concluído'
+          } else if (statusNormalizado === 'cancelado') {
+            statusStyle = 'bg-red-100 text-red-700'
+            statusTexto = 'Cancelado'
+          }
+
+          return {
+            id: item.id_agendamento,
+            id_agendamento: item.id_agendamento,
+            id_paciente: item.id_paciente,
+            iniciais,
+            paciente: nomePaciente,
+            medico: item.Profissional?.User?.nome || 'Médico(a)',
+            data: `${dataFormatada} às ${horarioFormatado}`,
+            status: statusTexto,
+            statusStyle
+          }
+        })
+        setAgendamentos(formatados)
+      } else {
+        setAgendamentos([])
+      }
+    } catch (err) {
+      console.error('Erro ao buscar agendamentos da clínica:', err)
+      setAgendamentos([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   function abrirModal(tipo, item) {
     setItemSelecionado(item)
@@ -50,10 +85,17 @@ export default function AgendamentosPage() {
     setItemSelecionado(null)
   }
 
-  function handleConfirmarAcao() {
+  async function handleConfirmarAcao() {
     if (modalAberto === 'remover') {
       setAgendamentos((prev) => prev.filter(a => a.id !== itemSelecionado.id))
     } else if (modalAberto === 'cancelar') {
+      try {
+        if (itemSelecionado.id_paciente && itemSelecionado.id_agendamento) {
+          await api.patch(`/pacientes/${itemSelecionado.id_paciente}/agendamentos/${itemSelecionado.id_agendamento}/cancelar`)
+        }
+      } catch (cancelErr) {
+        console.warn('Erro ao cancelar agendamento na API:', cancelErr)
+      }
       setAgendamentos((prev) => prev.map(a => 
         a.id === itemSelecionado.id 
           ? { ...a, status: 'Cancelado', statusStyle: 'bg-red-100 text-red-700' }
@@ -62,14 +104,6 @@ export default function AgendamentosPage() {
     }
     fecharModal()
   }
-
-  // Filtros aplicados
-  const agendamentosFiltrados = agendamentos.filter(item => {
-    const matchBusca = item.paciente.toLowerCase().includes(busca.toLowerCase()) || item.medico.toLowerCase().includes(busca.toLowerCase())
-    const matchMedico = filtroMedico === 'Todos os médicos' || item.medico === filtroMedico
-    const matchStatus = filtroStatus === 'Todos os status' || item.status === filtroStatus
-    return matchBusca && matchMedico && matchStatus
-  })
 
   return (
     <div className="p-8 lg:p-12 w-full animate-[fadeIn_0.3s_ease-out] relative min-h-screen">
@@ -80,55 +114,12 @@ export default function AgendamentosPage() {
         <p className="text-[15px] text-slate-500 mt-1">Gerencie os agendamentos dos médicos desta clínica.</p>
       </div>
 
-      {/* ── Filtros ── */}
-      <div className="flex flex-col md:flex-row items-center gap-4 mb-8">
-        
-        {/* Input de Busca */}
-        <div className="relative flex-1 w-full">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-            </svg>
-          </div>
-          <input
-            type="text"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por paciente ou médico..."
-            className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-[14px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
-          />
-        </div>
-
-        {/* Select Médico */}
-        <select 
-          value={filtroMedico}
-          onChange={(e) => setFiltroMedico(e.target.value)}
-          className="w-full md:w-auto px-4 py-3 bg-white border border-slate-200 rounded-xl text-[14px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm appearance-none cursor-pointer pr-10 relative bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_12px_center] bg-[length:16px]"
-        >
-          <option value="Todos os médicos">Todos os médicos</option>
-          <option value="Dra. Camila Lins">Dra. Camila Lins</option>
-        </select>
-
-        {/* Select Status */}
-        <select
-          value={filtroStatus}
-          onChange={(e) => setFiltroStatus(e.target.value)}
-          className="w-full md:w-auto px-4 py-3 bg-white border border-slate-200 rounded-xl text-[14px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm appearance-none cursor-pointer pr-10 relative bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_12px_center] bg-[length:16px]"
-        >
-          <option value="Todos os status">Todos os status</option>
-          <option value="Confirmado">Confirmado</option>
-          <option value="Pendente">Pendente</option>
-          <option value="Concluído">Concluído</option>
-          <option value="Cancelado">Cancelado</option>
-        </select>
-      </div>
-
       {/* ── Lista de Agendamentos ── */}
       <div className="flex flex-col gap-4">
-        {agendamentosFiltrados.length === 0 ? (
+        {agendamentos.length === 0 ? (
           <p className="text-sm text-slate-500 text-center py-10">Nenhum agendamento encontrado.</p>
         ) : (
-          agendamentosFiltrados.map((item) => (
+          agendamentos.map((item) => (
             <div key={item.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between">
               
               <div className="flex items-center gap-4">

@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../shared/hooks/useAuth'
+import api from '../../../lib/api'
 
 const navItems = [
   {
@@ -63,6 +64,39 @@ export default function ClinicaLayout() {
   const { usuario, logout } = useAuth()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [emailClinica, setEmailClinica] = useState(usuario?.email || '')
+
+  useEffect(() => {
+    if (usuario?.email) {
+      setEmailClinica(usuario.email)
+      return
+    }
+
+    const buscarEmailClinica = async () => {
+      try {
+        const { data } = await api.get('/clinicas')
+        if (Array.isArray(data)) {
+          const clinicaEncontrada = data.find(
+            c => c.id_clinica === usuario?.id_clinica ||
+                 c.id_user === usuario?.id ||
+                 c.User?.nome === usuario?.nome
+          )
+          if (clinicaEncontrada?.User?.email) {
+            setEmailClinica(clinicaEncontrada.User.email)
+            const userLocal = JSON.parse(localStorage.getItem('@prontovital:user') || '{}')
+            localStorage.setItem('@prontovital:user', JSON.stringify({
+              ...userLocal,
+              email: clinicaEncontrada.User.email
+            }))
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao buscar dados da clínica:', err)
+      }
+    }
+
+    buscarEmailClinica()
+  }, [usuario])
 
   const toggleMenu = () => setMobileMenuOpen(!mobileMenuOpen)
   const closeMenu = () => setMobileMenuOpen(false)
@@ -116,8 +150,8 @@ export default function ClinicaLayout() {
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold text-slate-800 truncate">{usuario?.nome || 'Clínica Saúde'}</p>
-                <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">{usuario?.email || 'email@clinica.com'}</p>
+                <p className="text-[13px] font-bold text-slate-800 truncate">{usuario?.nome || 'Clínica'}</p>
+                <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">{emailClinica || usuario?.email || ''}</p>
               </div>
             </div>
           </div>
