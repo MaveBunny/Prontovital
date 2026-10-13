@@ -1,35 +1,22 @@
+
 import api from './api'
 
-/**
- * POST /api/auth/login
- * @param {{ email: string, senha: string }} credentials
- * @returns {{ token: string, usuario: object }}
- */
 export async function login(credentials) {
-  try {
-    const { data } = await api.post('/api/auth/login', credentials)
-    localStorage.setItem('@prontovital:token', data.token)
-    localStorage.setItem('@prontovital:user', JSON.stringify(data.usuario))
-    return data
-  } catch (error) {
-    // MOCK LOGIN PARA TESTE DO PROTÓTIPO SEM BACKEND
-    const mockUser = {
-      id: 'clinica-123',
-      nome: 'Clínica Saúde Ilha do Leite',
-      email: 'gestao@ilhaleite.com',
-      tipo: 'clinica'
-    }
-    localStorage.setItem('@prontovital:token', 'mock-token-123')
-    localStorage.setItem('@prontovital:user', JSON.stringify(mockUser))
-    return { token: 'mock-token-123', usuario: mockUser }
+  const { data } = await api.post('/auth/login', {
+    email: credentials.email,
+    senha: credentials.senha,
+  })
+
+  if (!data?.token || !data?.usuario) {
+    throw new Error('A API retornou uma resposta de login inválida.')
   }
+
+  localStorage.setItem('@prontovital:token', data.token)
+  localStorage.setItem('@prontovital:user', JSON.stringify(data.usuario))
+
+  return data
 }
 
-/**
- * PATCH /api/auth/:id/rec-senha
- * @param {string} id
- * @param {{ novaSenha: string }} payload
- */
 export async function recuperarSenha(id, payload) {
   const { data } = await api.patch(`/api/auth/${id}/rec-senha`, payload)
   return data
