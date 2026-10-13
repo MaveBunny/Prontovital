@@ -1,16 +1,43 @@
-# React + Vite
+# ProntoVital — Frontend Web Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+> Aplicação web desenvolvida com **React 19**, **Vite** e **Tailwind CSS**, conectada à API RESTful na nuvem do ProntoVital.
 
-Currently, two official plugins are available:
+Consulte a documentação completa no [README principal da raiz do repositório](../README.md).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 🚀 Como Executar
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. **Instale as dependências:**
+   ```bash
+   npm install
+   ```
 
-## Expanding the Oxlint configuration
+2. **Configure o `.env`:**
+   ```bash
+   cp .env.example .env
+   ```
+   Certifique-se de que a variável aponta para a API na nuvem:
+   ```env
+   VITE_API_URL=https://prontovital-api.onrender.com
+   ```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+3. **Inicie o servidor de desenvolvimento:**
+   ```bash
+   npm run dev
+   ```
+   Acesse: [http://localhost:5173](http://localhost:5173)
+
+4. **Build para Produção:**
+   ```bash
+   npm run build
+   ```
+
+---
+
+## 🔑 Credenciais para Testes Rápidos
+
+* **Admin:** `admin@email.com` | Senha: `coxinha123`
+* **Clínica:** `ciaesorriso@gmail.com` | Senha: `admin`
+* **Médico:** `amandavirginia@gmail.com` | Senha: `admin`
+* **Paciente:** `severino@email.com` | Senha: `senhaForte123`
