@@ -28,13 +28,11 @@ export default function ProfissionaisPage() {
     status: 'Ativo'
   })
 
-  // Modal de vincular/alterar especialidade
   const [modalVincularAberto, setModalVincularAberto] = useState(false)
   const [medicoParaVincular, setMedicoParaVincular] = useState(null)
   const [especialidadeSelecionadaModal, setEspecialidadeSelecionadaModal] = useState('1')
   const [salvandoEspecialidade, setSalvandoEspecialidade] = useState(false)
 
-  // Modal de exclusão
   const [modalExcluirAberto, setModalExcluirAberto] = useState(false)
   const [itemParaExcluir, setItemParaExcluir] = useState(null)
   const [excluindo, setExcluindo] = useState(false)
@@ -267,7 +265,6 @@ export default function ProfissionaisPage() {
 
         {erro && <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6">{erro}</div>}
 
-        {/* Formulário de Cadastro / Vínculo de Profissional */}
         {mostraForm && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 mb-8 animate-[fadeIn_0.2s_ease-out]">
             <h3 className="text-[12px] font-bold text-slate-500 uppercase tracking-widest mb-6">
@@ -365,7 +362,6 @@ export default function ProfissionaisPage() {
                 </div>
               </div>
 
-              {/* Clínica e Especialidade */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
@@ -485,7 +481,6 @@ export default function ProfissionaisPage() {
                       {item.status}
                     </span>
 
-                    {/* Botão Vincular / Alterar Especialidade */}
                     <button
                       type="button"
                       onClick={() => abrirModalVincular(item)}
@@ -520,7 +515,6 @@ export default function ProfissionaisPage() {
         )}
       </div>
 
-      {/* Modal para Vincular Especialidade a um Profissional */}
       {modalVincularAberto && medicoParaVincular && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-[fadeIn_0.2s_ease-out]"
@@ -593,7 +587,6 @@ export default function ProfissionaisPage() {
         </div>
       )}
 
-      {/* Modal de exclusão */}
       {modalExcluirAberto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
           <div

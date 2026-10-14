@@ -13,7 +13,6 @@ export default function MedicosPage() {
   const [loading, setLoading] = useState(true)
   const [medicoSelecionado, setMedicoSelecionado] = useState(null)
 
-  // Estado para vincular/alterar especialidade
   const [listaEspecialidades, setListaEspecialidades] = useState(LISTA_ESPECIALIDADES_PADRAO)
   const [modoEdicaoEsp, setModoEdicaoEsp] = useState(false)
   const [espSelecionada, setEspSelecionada] = useState('1')
@@ -113,14 +112,12 @@ export default function MedicosPage() {
       )
       const novoNome = espEncontrada?.nome || 'Especialidade vinculada'
 
-      // Atualiza o médico no modal
       setMedicoSelecionado((prev) => ({
         ...prev,
         id_especialidade: Number(espSelecionada),
         especialidade: novoNome,
       }))
 
-      // Atualiza na lista de médicos
       setMedicos((prev) =>
         prev.map((m) =>
           m.id === medicoSelecionado.id
@@ -204,7 +201,6 @@ export default function MedicosPage() {
         </div>
       )}
 
-      {/* ── Modal de Detalhes do Profissional com Vínculo de Especialidade ── */}
       {medicoSelecionado && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-[fadeIn_0.2s_ease-out]"
@@ -214,7 +210,6 @@ export default function MedicosPage() {
             className="bg-white w-full max-w-lg rounded-2xl p-6 sm:p-8 shadow-2xl border border-slate-100 animate-[zoomIn_0.2s_ease-out]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header Modal */}
             <div className="flex items-center justify-between pb-5 border-b border-slate-100">
               <div className="flex items-center gap-3.5">
                 <div className="w-13 h-13 rounded-full bg-teal-50 text-teal-700 flex items-center justify-center shrink-0 border border-teal-100">
@@ -244,7 +239,6 @@ export default function MedicosPage() {
               </button>
             </div>
 
-            {/* Alertas de Sucesso / Erro */}
             {mensagemSucesso && (
               <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-xl flex items-center gap-2 animate-[fadeIn_0.2s_ease]">
                 <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -263,7 +257,6 @@ export default function MedicosPage() {
               </div>
             )}
 
-            {/* Informações Profissionais */}
             <div className="py-5 space-y-4">
               <div>
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5">
@@ -281,7 +274,6 @@ export default function MedicosPage() {
                     </span>
                   </div>
 
-                  {/* Campo de Especialidade com Botão para Vincular */}
                   <div className="col-span-2 pt-2.5 border-t border-slate-200/60">
                     <div className="flex items-center justify-between">
                       <div>
@@ -302,7 +294,6 @@ export default function MedicosPage() {
                       </button>
                     </div>
 
-                    {/* Formulário Inline de Vinculação */}
                     {modoEdicaoEsp && (
                       <div className="mt-3 p-3 bg-white border border-blue-200 rounded-xl space-y-2.5 shadow-xs animate-[fadeIn_0.2s_ease]">
                         <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider">
@@ -398,7 +389,6 @@ export default function MedicosPage() {
               </div>
             </div>
 
-            {/* Rodapé do Modal */}
             <div className="pt-4 border-t border-slate-100 flex justify-end">
               <button
                 type="button"

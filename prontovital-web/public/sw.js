@@ -32,7 +32,6 @@ self.addEventListener('activate', (event) => {
 })
 
 self.addEventListener('fetch', (event) => {
-  // Ignora requisições de API para não cachear dados dinâmicos do backend
   if (
     event.request.method !== 'GET' ||
     event.request.url.includes('/auth') ||
@@ -44,7 +43,6 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Network-first com fallback para cache
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {

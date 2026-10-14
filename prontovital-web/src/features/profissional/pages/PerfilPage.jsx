@@ -54,7 +54,7 @@ const camposProfissionais = [
 export default function PerfilPage() {
   const { usuario, atualizarUsuario } = useAuth()
 
-  const [abaAtiva, setAbaAtiva] = useState('perfil') // 'perfil' | 'editar'
+  const [abaAtiva, setAbaAtiva] = useState('perfil')
   const [formulario, setFormulario] = useState(() => mapearFormulario(usuario))
   const [clinicas, setClinicas] = useState([])
   const [carregandoPerfil, setCarregandoPerfil] = useState(true)
@@ -242,7 +242,6 @@ export default function PerfilPage() {
 
   return (
     <div className="min-h-screen px-6 py-8 sm:px-10 lg:px-12 w-full animate-[fadeIn_0.3s_ease-out]">
-      {/* ── Top Header ── */}
       <header className="mb-6">
         <p className="mb-1 text-sm font-semibold text-blue-600">
           Área do profissional
@@ -257,7 +256,6 @@ export default function PerfilPage() {
         </p>
       </header>
 
-      {/* ── Abas de Navegação (Meu Perfil vs Editar Perfil) ── */}
       <div className="inline-flex p-1 bg-slate-100 rounded-xl mb-8 border border-slate-200/60 max-w-sm w-full">
         <button
           type="button"
@@ -296,11 +294,9 @@ export default function PerfilPage() {
         </div>
       ) : (
         <>
-          {/* ══════════════ ABA 1: MEU PERFIL (VISUALIZAÇÃO DE INFORMAÇÕES) ══════════════ */}
           {abaAtiva === 'perfil' && (
             <div className="max-w-4xl space-y-6 animate-[fadeIn_0.2s_ease-out]">
               
-              {/* Card Destaque (estilo card da tela de Médicos) */}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-full bg-teal-50 text-teal-700 flex items-center justify-center shrink-0 border border-teal-100 shadow-2xs">
@@ -335,7 +331,6 @@ export default function PerfilPage() {
                 </div>
               </div>
 
-              {/* Informações Pessoais Guardadas */}
               <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs sm:p-8">
                 <div className="mb-5 pb-3 border-b border-slate-100">
                   <h3 className="text-base font-bold text-slate-800">
@@ -376,7 +371,6 @@ export default function PerfilPage() {
                 </div>
               </section>
 
-              {/* Informações Profissionais Guardadas */}
               <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs sm:p-8">
                 <div className="mb-5 pb-3 border-b border-slate-100">
                   <h3 className="text-base font-bold text-slate-800">
@@ -410,7 +404,6 @@ export default function PerfilPage() {
                 </div>
               </section>
 
-              {/* Clínicas Vinculadas (se houver) */}
               {clinicas.length > 0 && (
                 <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs sm:p-8">
                   <div className="mb-4">
@@ -441,7 +434,6 @@ export default function PerfilPage() {
             </div>
           )}
 
-          {/* ══════════════ ABA 2: EDITAR PERFIL (FORMULÁRIO DE EDIÇÃO) ══════════════ */}
           {abaAtiva === 'editar' && (
             <form onSubmit={salvarPerfil} className="max-w-4xl space-y-6 animate-[fadeIn_0.2s_ease-out]">
               <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs sm:p-8">

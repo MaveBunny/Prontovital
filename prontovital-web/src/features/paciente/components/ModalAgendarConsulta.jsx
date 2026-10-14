@@ -53,7 +53,6 @@ export default function ModalAgendarConsulta({
   const [sucesso, setSucesso] = useState(false)
   const [erro, setErro] = useState('')
 
-  // Carrega médicos vinculados a clínicas
   useEffect(() => {
     if (!aberto) return
     carregarProfissionais()
@@ -106,7 +105,6 @@ export default function ModalAgendarConsulta({
 
   const idProfissional = medico?.id_profissional || medico?.id || medicoId
 
-  // Busca a tabela de horários/dias da semana que o médico atende
   useEffect(() => {
     if (!aberto || !idProfissional) return
 
@@ -117,7 +115,6 @@ export default function ModalAgendarConsulta({
         if (Array.isArray(data) && data.length > 0) {
           setHorariosSemanais(data)
         } else {
-          // Padrão comercial da rede: Segunda a Sexta das 08h às 18h
           setHorariosSemanais([
             { dia_da_semana: 1, horario_abertura: '08:00', horario_fechamento: '18:00' },
             { dia_da_semana: 2, horario_abertura: '08:00', horario_fechamento: '18:00' },
@@ -127,7 +124,6 @@ export default function ModalAgendarConsulta({
           ])
         }
       } catch {
-        // Fallback Segunda a Sexta
         setHorariosSemanais([
           { dia_da_semana: 1, horario_abertura: '08:00', horario_fechamento: '18:00' },
           { dia_da_semana: 2, horario_abertura: '08:00', horario_fechamento: '18:00' },
@@ -143,12 +139,10 @@ export default function ModalAgendarConsulta({
     buscarHorariosSemanais()
   }, [aberto, idProfissional])
 
-  // Conjunto com os números dos dias da semana que o médico pode atender (0 = Dom, 1 = Seg, ... 6 = Sáb)
   const diasAtendimentoSet = useMemo(() => {
     return new Set(horariosSemanais.map((h) => Number(h.dia_da_semana)))
   }, [horariosSemanais])
 
-  // Gera os próximos 14 dias com destaque visual para os dias que o médico atende
   const proximosDias = useMemo(() => {
     const listaDias = []
     const hoje = new Date()
@@ -179,7 +173,6 @@ export default function ModalAgendarConsulta({
     return listaDias
   }, [diasAtendimentoSet])
 
-  // Seleciona automaticamente o primeiro dia útil/disponível do médico
   useEffect(() => {
     if (proximosDias.length > 0 && !dataConsulta) {
       const primeiroDisponivel = proximosDias.find((d) => d.podeAtender)
@@ -191,7 +184,6 @@ export default function ModalAgendarConsulta({
     }
   }, [proximosDias, dataConsulta])
 
-  // Busca os horários livres e calcula os ocupados para a data selecionada
   useEffect(() => {
     if (!idProfissional || !dataConsulta) return
 
@@ -222,7 +214,6 @@ export default function ModalAgendarConsulta({
     carregarSlots()
   }, [idProfissional, dataConsulta])
 
-  // Todos os slots de atendimento do dia (livres + ocupados)
   const todosOsSlotsDoDia = useMemo(() => {
     if (!dataConsulta) return []
     const d = new Date(`${dataConsulta}T00:00:00.000Z`)
@@ -241,7 +232,6 @@ export default function ModalAgendarConsulta({
 
     const slotsGerados = gerarSlotsPadrao(abertura, fechamento)
 
-    // Garante que todos os horários que o backend retornou estejam na lista
     const todos = Array.from(new Set([...slotsGerados, ...horariosLivres])).sort()
     return todos
   }, [dataConsulta, horariosSemanais, diasAtendimentoSet, horariosLivres])
@@ -312,7 +302,6 @@ export default function ModalAgendarConsulta({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-slate-900/60 backdrop-blur-xs animate-[fadeIn_0.2s_ease-out] overflow-y-auto">
       <div className="bg-white w-full max-w-xl rounded-2xl p-6 shadow-2xl border border-slate-100 my-8 overflow-hidden animate-[zoomIn_0.2s_ease-out] max-h-[92vh] flex flex-col">
 
-        {/* Cabeçalho */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
           <div>
             <h3 className="text-xl font-bold text-slate-900">Agendar Consulta</h3>
@@ -344,7 +333,6 @@ export default function ModalAgendarConsulta({
         ) : (
           <form onSubmit={handleConfirmar} className="mt-4 space-y-4 overflow-y-auto pr-1 flex-1">
 
-            {/* Identificação do Profissional */}
             {!medicoPreSelecionado ? (
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -388,7 +376,6 @@ export default function ModalAgendarConsulta({
               </div>
             )}
 
-            {/* Dias de Atendimento do Médico (Destaque Semanal) */}
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
@@ -426,7 +413,6 @@ export default function ModalAgendarConsulta({
               </div>
             </div>
 
-            {/* Seletor de Dias em Destaque */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
@@ -437,7 +423,6 @@ export default function ModalAgendarConsulta({
                 </span>
               </div>
 
-              {/* Linha de Dias com Destaque */}
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
                 {proximosDias.map((d) => {
                   const isSelecionado = dataConsulta === d.dataISO
@@ -486,7 +471,6 @@ export default function ModalAgendarConsulta({
                 })}
               </div>
 
-              {/* Input de Data alternativo para o usuário */}
               <div className="mt-2 flex items-center gap-2">
                 <input
                   type="date"
@@ -510,7 +494,6 @@ export default function ModalAgendarConsulta({
               )}
             </div>
 
-            {/* Grade de Horários (Disponíveis vs Ocupados) */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
@@ -531,7 +514,7 @@ export default function ModalAgendarConsulta({
               {carregandoSlots ? (
                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 flex items-center justify-center gap-2">
                   <svg className="animate-spin h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                   <span>Verificando horários livres e ocupados...</span>
@@ -589,7 +572,6 @@ export default function ModalAgendarConsulta({
               )}
             </div>
 
-            {/* Observações / Sintomas */}
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Observação / Motivo da Consulta

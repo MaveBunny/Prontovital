@@ -21,7 +21,6 @@ export default function ProfissionaisPage() {
   const [modalAberto, setModalAberto] = useState(false)
   const [medicoSelecionado, setMedicoSelecionado] = useState(null)
 
-  // Sincroniza se o parâmetro de busca na URL mudar
   useEffect(() => {
     if (clinicaUrlParam) {
       setClinicaSelecionada(clinicaUrlParam)
@@ -49,7 +48,6 @@ export default function ProfissionaisPage() {
     carregar()
   }, [])
 
-  // Lista dinâmica de especialidades encontradas na base
   const especialidadesDisponiveis = [
     'Todos',
     ...Array.from(
@@ -62,7 +60,6 @@ export default function ProfissionaisPage() {
     ),
   ]
 
-  // Filtro de profissionais com vínculo estrito de clínica
   const profissionaisFiltrados = profissionais.filter((p) => {
     const termo = busca.trim().toLowerCase()
     const matchBusca =
@@ -87,7 +84,6 @@ export default function ProfissionaisPage() {
     return matchBusca && matchEsp && matchClinica
   })
 
-  // Nome da clínica atualmente selecionada no filtro
   const clinicaAtivaObj = clinicas.find(
     (c) => String(c.id_clinica) === String(clinicaSelecionada)
   )
@@ -129,10 +125,7 @@ export default function ProfissionaisPage() {
         </p>
       </div>
 
-      {/* Barra de Filtros */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mb-6 max-w-5xl">
-
-        {/* Campo de Busca Livre */}
         <div className="relative md:col-span-5 w-full">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -148,7 +141,6 @@ export default function ProfissionaisPage() {
           />
         </div>
 
-        {/* Filtro de Clínica */}
         <div className="md:col-span-4 w-full">
           <select
             value={clinicaSelecionada}
@@ -164,7 +156,6 @@ export default function ProfissionaisPage() {
           </select>
         </div>
 
-        {/* Filtro de Especialidade */}
         <div className="md:col-span-3 w-full">
           <select
             value={especialidadeSelecionada}
@@ -181,7 +172,6 @@ export default function ProfissionaisPage() {
 
       </div>
 
-      {/* Banner de Filtro de Clínica Ativo */}
       {clinicaSelecionada !== 'Todas' && (
         <div className="mb-6 max-w-5xl p-4 bg-blue-50/80 border border-blue-200/90 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-3">

@@ -62,8 +62,6 @@ body {
     transform: translateY(0);
   }
 }
-
-/* Oculta o olho nativo de revelação de senha do Microsoft Edge e Internet Explorer */
 input::-ms-reveal,
 input::-ms-clear {
   display: none !important;
