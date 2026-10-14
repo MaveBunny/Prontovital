@@ -1,6 +1,34 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import api from '../../../lib/api'
 import { agendarConsulta } from '../../../lib/agendamentosApi'
+
+const DIAS_SEMANA_NOMES = [
+  { dia: 0, nomeCurto: 'Dom', nomeCompleto: 'Domingo' },
+  { dia: 1, nomeCurto: 'Seg', nomeCompleto: 'Segunda' },
+  { dia: 2, nomeCurto: 'Ter', nomeCompleto: 'Terça' },
+  { dia: 3, nomeCurto: 'Qua', nomeCompleto: 'Quarta' },
+  { dia: 4, nomeCurto: 'Qui', nomeCompleto: 'Quinta' },
+  { dia: 5, nomeCurto: 'Sex', nomeCompleto: 'Sexta' },
+  { dia: 6, nomeCurto: 'Sáb', nomeCompleto: 'Sábado' },
+]
+
+function gerarSlotsPadrao(aberturaStr = '08:00', fechamentoStr = '18:00') {
+  const [hIni, mIni] = aberturaStr.slice(0, 5).split(':').map(Number)
+  const [hFim, mFim] = fechamentoStr.slice(0, 5).split(':').map(Number)
+
+  const slots = []
+  let atual = hIni * 60 + mIni
+  const fim = hFim * 60 + mFim
+
+  while (atual + 30 <= fim) {
+    const hora = String(Math.floor(atual / 60)).padStart(2, '0')
+    const minuto = String(atual % 60).padStart(2, '0')
+    slots.push(`${hora}:${minuto}`)
+    atual += 30
+  }
+
+  return slots
+}
 
 export default function ModalAgendarConsulta({
   aberto,
@@ -12,22 +40,20 @@ export default function ModalAgendarConsulta({
 }) {
   const [profissionais, setProfissionais] = useState([])
   const [medicoId, setMedicoId] = useState('')
-  const [dataConsulta, setDataConsulta] = useState(() => {
-    const amanha = new Date()
-    amanha.setDate(amanha.getDate() + 1)
-    if (amanha.getDay() === 6) amanha.setDate(amanha.getDate() + 2)
-    if (amanha.getDay() === 0) amanha.setDate(amanha.getDate() + 1)
-    return amanha.toISOString().split('T')[0]
-  })
-  const [horariosDisponiveis, setHorariosDisponiveis] = useState([])
+  const [horariosSemanais, setHorariosSemanais] = useState([])
+  const [carregandoHorariosSemanais, setCarregandoHorariosSemanais] = useState(false)
+
+  const [dataConsulta, setDataConsulta] = useState('')
+  const [horariosLivres, setHorariosLivres] = useState([])
   const [horarioSelecionado, setHorarioSelecionado] = useState('')
-  const [carregandoHorarios, setCarregandoHorarios] = useState(false)
+  const [carregandoSlots, setCarregandoSlots] = useState(false)
   const [carregandoProfissionais, setCarregandoProfissionais] = useState(false)
   const [resumoTriagem, setResumoTriagem] = useState(resumoTriagemInicial)
   const [salvando, setSalvando] = useState(false)
   const [sucesso, setSucesso] = useState(false)
   const [erro, setErro] = useState('')
 
+  // Carrega médicos vinculados a clínicas
   useEffect(() => {
     if (!aberto) return
     carregarProfissionais()
@@ -78,35 +104,150 @@ export default function ModalAgendarConsulta({
     lista[0] ||
     null
 
+  const idProfissional = medico?.id_profissional || medico?.id || medicoId
+
+  // Busca a tabela de horários/dias da semana que o médico atende
   useEffect(() => {
-    const idProf = medico?.id_profissional || medico?.id || medicoId
-    if (!idProf || !dataConsulta) return
+    if (!aberto || !idProfissional) return
+
+    async function buscarHorariosSemanais() {
+      setCarregandoHorariosSemanais(true)
+      try {
+        const { data } = await api.get(`/profissionais/${idProfissional}/horarios`)
+        if (Array.isArray(data) && data.length > 0) {
+          setHorariosSemanais(data)
+        } else {
+          // Padrão comercial da rede: Segunda a Sexta das 08h às 18h
+          setHorariosSemanais([
+            { dia_da_semana: 1, horario_abertura: '08:00', horario_fechamento: '18:00' },
+            { dia_da_semana: 2, horario_abertura: '08:00', horario_fechamento: '18:00' },
+            { dia_da_semana: 3, horario_abertura: '08:00', horario_fechamento: '18:00' },
+            { dia_da_semana: 4, horario_abertura: '08:00', horario_fechamento: '18:00' },
+            { dia_da_semana: 5, horario_abertura: '08:00', horario_fechamento: '18:00' },
+          ])
+        }
+      } catch {
+        // Fallback Segunda a Sexta
+        setHorariosSemanais([
+          { dia_da_semana: 1, horario_abertura: '08:00', horario_fechamento: '18:00' },
+          { dia_da_semana: 2, horario_abertura: '08:00', horario_fechamento: '18:00' },
+          { dia_da_semana: 3, horario_abertura: '08:00', horario_fechamento: '18:00' },
+          { dia_da_semana: 4, horario_abertura: '08:00', horario_fechamento: '18:00' },
+          { dia_da_semana: 5, horario_abertura: '08:00', horario_fechamento: '18:00' },
+        ])
+      } finally {
+        setCarregandoHorariosSemanais(false)
+      }
+    }
+
+    buscarHorariosSemanais()
+  }, [aberto, idProfissional])
+
+  // Conjunto com os números dos dias da semana que o médico pode atender (0 = Dom, 1 = Seg, ... 6 = Sáb)
+  const diasAtendimentoSet = useMemo(() => {
+    return new Set(horariosSemanais.map((h) => Number(h.dia_da_semana)))
+  }, [horariosSemanais])
+
+  // Gera os próximos 14 dias com destaque visual para os dias que o médico atende
+  const proximosDias = useMemo(() => {
+    const listaDias = []
+    const hoje = new Date()
+
+    for (let i = 1; i <= 14; i++) {
+      const d = new Date()
+      d.setDate(hoje.getDate() + i)
+
+      const ano = d.getFullYear()
+      const mes = String(d.getMonth() + 1).padStart(2, '0')
+      const dia = String(d.getDate()).padStart(2, '0')
+      const dataISO = `${ano}-${mes}-${dia}`
+
+      const diaSemana = d.getDay()
+      const podeAtender = diasAtendimentoSet.has(diaSemana)
+      const infoSemana = DIAS_SEMANA_NOMES.find((s) => s.dia === diaSemana)
+
+      listaDias.push({
+        dataISO,
+        diaNum: dia,
+        mesNome: d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''),
+        diaSemanaCurto: infoSemana?.nomeCurto || '',
+        diaSemanaCompleto: infoSemana?.nomeCompleto || '',
+        podeAtender,
+      })
+    }
+
+    return listaDias
+  }, [diasAtendimentoSet])
+
+  // Seleciona automaticamente o primeiro dia útil/disponível do médico
+  useEffect(() => {
+    if (proximosDias.length > 0 && !dataConsulta) {
+      const primeiroDisponivel = proximosDias.find((d) => d.podeAtender)
+      if (primeiroDisponivel) {
+        setDataConsulta(primeiroDisponivel.dataISO)
+      } else {
+        setDataConsulta(proximosDias[0].dataISO)
+      }
+    }
+  }, [proximosDias, dataConsulta])
+
+  // Busca os horários livres e calcula os ocupados para a data selecionada
+  useEffect(() => {
+    if (!idProfissional || !dataConsulta) return
 
     async function carregarSlots() {
-      setCarregandoHorarios(true)
+      setCarregandoSlots(true)
       setErro('')
       try {
         const { data } = await api.get(
-          `/profissionais/${idProf}/disponibilidade?data=${dataConsulta}`
+          `/profissionais/${idProfissional}/disponibilidade?data=${dataConsulta}`
         )
-        if (Array.isArray(data) && data.length > 0) {
-          setHorariosDisponiveis(data)
-          setHorarioSelecionado(data[0])
+        const livres = Array.isArray(data) ? data : []
+        setHorariosLivres(livres)
+
+        if (livres.length > 0) {
+          setHorarioSelecionado(livres[0])
         } else {
-          setHorariosDisponiveis([])
           setHorarioSelecionado('')
         }
       } catch (err) {
         console.error('Erro ao buscar horários disponíveis:', err)
-        setHorariosDisponiveis([])
+        setHorariosLivres([])
         setHorarioSelecionado('')
       } finally {
-        setCarregandoHorarios(false)
+        setCarregandoSlots(false)
       }
     }
 
     carregarSlots()
-  }, [medico?.id, medico?.id_profissional, medicoId, dataConsulta])
+  }, [idProfissional, dataConsulta])
+
+  // Todos os slots de atendimento do dia (livres + ocupados)
+  const todosOsSlotsDoDia = useMemo(() => {
+    if (!dataConsulta) return []
+    const d = new Date(`${dataConsulta}T00:00:00.000Z`)
+    const diaSemana = d.getUTCDay()
+
+    const horarioConfig = horariosSemanais.find(
+      (h) => Number(h.dia_da_semana) === diaSemana
+    )
+
+    if (!horarioConfig && !diasAtendimentoSet.has(diaSemana)) {
+      return []
+    }
+
+    const abertura = horarioConfig?.horario_abertura || '08:00'
+    const fechamento = horarioConfig?.horario_fechamento || '18:00'
+
+    const slotsGerados = gerarSlotsPadrao(abertura, fechamento)
+
+    // Garante que todos os horários que o backend retornou estejam na lista
+    const todos = Array.from(new Set([...slotsGerados, ...horariosLivres])).sort()
+    return todos
+  }, [dataConsulta, horariosSemanais, diasAtendimentoSet, horariosLivres])
+
+  const diaSelecionadoInfo = proximosDias.find((d) => d.dataISO === dataConsulta)
+  const podeAtenderNoDiaSelecionado = diaSelecionadoInfo?.podeAtender ?? false
 
   if (!aberto) return null
 
@@ -121,6 +262,11 @@ export default function ModalAgendarConsulta({
 
     if (!medico.id_clinica) {
       setErro('Profissional sem clínica vinculada no banco real.')
+      return
+    }
+
+    if (!podeAtenderNoDiaSelecionado) {
+      setErro('O médico não realiza atendimentos nesta data. Escolha um dos dias em destaque.')
       return
     }
 
@@ -163,24 +309,30 @@ export default function ModalAgendarConsulta({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-[fadeIn_0.2s_ease-out]">
-      <div className="bg-white w-full max-w-lg rounded-2xl p-6 shadow-2xl border border-slate-100 overflow-hidden animate-[zoomIn_0.2s_ease-out]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-slate-900/60 backdrop-blur-xs animate-[fadeIn_0.2s_ease-out] overflow-y-auto">
+      <div className="bg-white w-full max-w-xl rounded-2xl p-6 shadow-2xl border border-slate-100 my-8 overflow-hidden animate-[zoomIn_0.2s_ease-out] max-h-[92vh] flex flex-col">
 
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+        {/* Cabeçalho */}
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
           <div>
             <h3 className="text-xl font-bold text-slate-900">Agendar Consulta</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Escolha o profissional, data e horário ideal.</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Selecione um dos dias de atendimento do médico e escolha o melhor horário.
+            </p>
           </div>
           <button
+            type="button"
             onClick={onFechar}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
           >
-            ✕
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
         {sucesso ? (
-          <div className="py-8 text-center animate-[fadeIn_0.3s_ease]">
+          <div className="py-12 text-center animate-[fadeIn_0.3s_ease]">
             <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-inner">
               <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -190,8 +342,9 @@ export default function ModalAgendarConsulta({
             <p className="text-sm text-slate-500 mt-1">Seu agendamento foi salvo com sucesso no sistema.</p>
           </div>
         ) : (
-          <form onSubmit={handleConfirmar} className="mt-5 space-y-4">
+          <form onSubmit={handleConfirmar} className="mt-4 space-y-4 overflow-y-auto pr-1 flex-1">
 
+            {/* Identificação do Profissional */}
             {!medicoPreSelecionado ? (
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -218,91 +371,261 @@ export default function ModalAgendarConsulta({
                 )}
               </div>
             ) : (
-              <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-3.5 flex items-center gap-3">
-                <div className="w-11 h-11 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center shrink-0 font-bold text-sm">
+              <div className="bg-blue-50/70 border border-blue-100 rounded-xl p-3.5 flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center shrink-0 font-bold text-sm shadow-2xs">
                   {medico?.iniciais || 'DR'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-bold text-slate-900">{medico?.nome}</h4>
-                  <p className="text-xs text-blue-700 font-medium">{medico?.especialidade}</p>
-                  <p className="text-[11px] text-slate-500 mt-0.5 truncate">{medico?.clinica}</p>
+                  <p className="text-xs text-blue-700 font-semibold">{medico?.especialidade}</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5 truncate flex items-center gap-1">
+                    <svg className="w-3 h-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.75a1.5 1.5 0 0 1 1.5-1.5h3a1.5 1.5 0 0 1 1.5 1.5V21" />
+                    </svg>
+                    {medico?.clinica}
+                  </p>
                 </div>
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Data da Consulta
+            {/* Dias de Atendimento do Médico (Destaque Semanal) */}
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                  </svg>
+                  Dias de atendimento do médico:
+                </span>
+                <span className="text-[11px] text-blue-700 font-bold">
+                  {diasAtendimentoSet.size} {diasAtendimentoSet.size === 1 ? 'dia na semana' : 'dias na semana'}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5">
+                {DIAS_SEMANA_NOMES.map((d) => {
+                  const atende = diasAtendimentoSet.has(d.dia)
+                  return (
+                    <span
+                      key={d.dia}
+                      className={`text-xs px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1 transition-all ${
+                        atende
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs font-bold'
+                          : 'bg-slate-100 text-slate-400 border border-slate-200 opacity-60'
+                      }`}
+                    >
+                      {atende && (
+                        <svg className="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                      )}
+                      {d.nomeCompleto}
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Seletor de Dias em Destaque */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Escolha uma data disponível
                 </label>
+                <span className="text-[11px] text-slate-500">
+                  Dias em destaque = <strong className="text-emerald-700 font-bold">Atendimento disponível</strong>
+                </span>
+              </div>
+
+              {/* Linha de Dias com Destaque */}
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                {proximosDias.map((d) => {
+                  const isSelecionado = dataConsulta === d.dataISO
+                  const podeAtender = d.podeAtender
+
+                  return (
+                    <button
+                      type="button"
+                      key={d.dataISO}
+                      onClick={() => {
+                        if (podeAtender) {
+                          setDataConsulta(d.dataISO)
+                        }
+                      }}
+                      disabled={!podeAtender}
+                      className={`min-w-[76px] py-2.5 px-2 rounded-xl flex flex-col items-center justify-center text-center transition-all border shrink-0 ${
+                        isSelecionado
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-md font-bold ring-2 ring-blue-400/30'
+                          : podeAtender
+                          ? 'bg-blue-50/60 border-blue-200 text-slate-800 hover:bg-blue-100 hover:border-blue-300 cursor-pointer shadow-2xs'
+                          : 'bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed opacity-50'
+                      }`}
+                    >
+                      <span className="text-[10px] uppercase font-bold tracking-wider">
+                        {d.diaSemanaCurto}
+                      </span>
+                      <span className="text-base font-extrabold my-0.5 leading-none">
+                        {d.diaNum}
+                      </span>
+                      <span className="text-[10px] capitalize opacity-85">
+                        {d.mesNome}
+                      </span>
+                      <span
+                        className={`text-[9px] font-bold mt-1 px-1.5 py-0.2 rounded-md ${
+                          isSelecionado
+                            ? 'bg-white/20 text-white'
+                            : podeAtender
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-slate-200 text-slate-400'
+                        }`}
+                      >
+                        {podeAtender ? 'Atende' : 'Folga'}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Input de Data alternativo para o usuário */}
+              <div className="mt-2 flex items-center gap-2">
                 <input
                   type="date"
                   value={dataConsulta}
-                  onChange={(e) => setDataConsulta(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  onChange={(e) => {
+                    const novaData = e.target.value
+                    setDataConsulta(novaData)
+                  }}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   required
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Horário {carregandoHorarios && '(verificando disponibilidade...)'}
-                </label>
-                {carregandoHorarios ? (
-                  <div className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-400">
-                    Buscando horários disponíveis...
-                  </div>
-                ) : horariosDisponiveis.length === 0 ? (
-                  <div className="px-3.5 py-2 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 font-medium leading-tight">
-                    Sem horários livres nesta data. Escolha outro dia.
-                  </div>
-                ) : (
-                  <select
-                    value={horarioSelecionado}
-                    onChange={(e) => setHorarioSelecionado(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  >
-                    {horariosDisponiveis.map((h) => (
-                      <option key={h} value={h}>
-                        {h}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
+              {!podeAtenderNoDiaSelecionado && dataConsulta && (
+                <p className="text-xs text-amber-700 bg-amber-50 p-2.5 rounded-xl border border-amber-200 mt-2 flex items-center gap-1.5 font-medium">
+                  <svg className="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                  </svg>
+                  O médico não realiza atendimentos neste dia da semana. Por favor, clique em um dos dias destacados acima.
+                </p>
+              )}
             </div>
 
+            {/* Grade de Horários (Disponíveis vs Ocupados) */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Horário do Atendimento
+                </label>
+                <div className="flex items-center gap-2.5 text-[11px]">
+                  <span className="flex items-center gap-1 text-emerald-700 font-bold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+                    Disponível
+                  </span>
+                  <span className="flex items-center gap-1 text-slate-400 font-medium">
+                    <span className="w-2 h-2 rounded-full bg-slate-300 inline-block"></span>
+                    Indisponível / Ocupado
+                  </span>
+                </div>
+              </div>
+
+              {carregandoSlots ? (
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  <span>Verificando horários livres e ocupados...</span>
+                </div>
+              ) : !podeAtenderNoDiaSelecionado ? (
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 text-center">
+                  Médico indisponível nesta data. Escolha outro dia em destaque acima.
+                </div>
+              ) : todosOsSlotsDoDia.length === 0 ? (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 text-center font-medium">
+                  Nenhum horário cadastrado para este dia da semana.
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-1">
+                  {todosOsSlotsDoDia.map((horario) => {
+                    const isLivre = horariosLivres.includes(horario)
+                    const isSelecionado = horarioSelecionado === horario
+
+                    if (isLivre) {
+                      return (
+                        <button
+                          type="button"
+                          key={horario}
+                          onClick={() => setHorarioSelecionado(horario)}
+                          className={`py-2 px-2.5 rounded-xl text-xs flex flex-col items-center justify-center transition-all cursor-pointer border ${
+                            isSelecionado
+                              ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-sm ring-2 ring-blue-400/30'
+                              : 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100 font-bold shadow-2xs'
+                          }`}
+                        >
+                          <span className="text-xs leading-tight">{horario}</span>
+                          <span className={`text-[9px] mt-0.5 font-semibold ${isSelecionado ? 'text-blue-100' : 'text-emerald-700'}`}>
+                            Disponível
+                          </span>
+                        </button>
+                      )
+                    }
+
+                    return (
+                      <button
+                        type="button"
+                        key={horario}
+                        disabled
+                        title="Este horário já está reservado ou indisponível"
+                        className="py-2 px-2.5 rounded-xl text-xs flex flex-col items-center justify-center bg-slate-100 text-slate-400 border border-slate-200/80 cursor-not-allowed opacity-70"
+                      >
+                        <span className="text-xs leading-tight line-through">{horario}</span>
+                        <span className="text-[9px] mt-0.5 font-medium text-slate-400">
+                          Ocupado
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Observações / Sintomas */}
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Observação / Sintomas
+                Observação / Motivo da Consulta
               </label>
               <textarea
                 rows={2}
                 value={resumoTriagem}
                 onChange={(e) => setResumoTriagem(e.target.value)}
-                placeholder="Descreva brevemente o motivo da consulta..."
+                placeholder="Descreva brevemente seus sintomas ou motivo da consulta..."
                 className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
             </div>
 
             {erro && (
-              <p className="text-xs text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-200 animate-[fadeIn_0.2s_ease]">
+              <p className="text-xs text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-200 animate-[fadeIn_0.2s_ease]">
                 {erro}
               </p>
             )}
 
-            <div className="pt-2 flex items-center justify-end gap-2">
+            <div className="pt-2 flex items-center justify-end gap-2 shrink-0">
               <button
                 type="button"
                 onClick={onFechar}
-                className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                disabled={salvando || (!medicoPreSelecionado && lista.length === 0) || !horarioSelecionado}
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
+                disabled={
+                  salvando ||
+                  (!medicoPreSelecionado && lista.length === 0) ||
+                  !horarioSelecionado ||
+                  !podeAtenderNoDiaSelecionado
+                }
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer disabled:cursor-not-allowed"
               >
                 {salvando ? 'Agendando...' : 'Confirmar Agendamento'}
               </button>

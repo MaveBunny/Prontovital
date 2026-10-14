@@ -43,7 +43,7 @@ export default function ClinicasPage() {
           Clínicas
         </h2>
         <p className="text-[15px] text-slate-500 mt-1">
-          Selecione uma clínica para ver os profissionais e agendar sua consulta.
+          Selecione uma clínica para ver os profissionais disponíveis e agendar sua consulta.
         </p>
       </div>
 
@@ -72,9 +72,11 @@ export default function ClinicasPage() {
           </svg>
         </div>
       ) : clinicasFiltradas.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center max-w-xl">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center max-w-xl mx-auto">
           <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
-            🔍
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
           </div>
           <h4 className="text-base font-bold text-slate-800">Nenhuma clínica encontrada</h4>
           <p className="text-xs text-slate-400 mt-1">Tente buscar por outro termo ou bairro.</p>
@@ -83,60 +85,67 @@ export default function ClinicasPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl">
           {clinicasFiltradas.map((clinica) => {
             const qtdProf = clinica.totalProfissionais || 0
-            const labelProf = qtdProf === 1 ? '1 profissional >' : `${qtdProf} profissionais >`
+            const urlProf = `/paciente/profissionais?clinica=${clinica.id_clinica}&nome=${encodeURIComponent(clinica.nome)}`
 
-              const urlProf = `/paciente/profissionais?clinica=${clinica.id_clinica}&nome=${encodeURIComponent(clinica.nome)}`
-
-              return (
-                <div
-                  key={clinica.id}
-                  className="bg-white rounded-2xl border border-slate-200/90 hover:border-blue-300 hover:shadow-md transition-all p-6 flex flex-col justify-between group"
-                >
-                  <div>
-                    <div className="flex items-start gap-3.5 mb-4">
-                      <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                        </svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3
-                          onClick={() => navigate(urlProf)}
-                          className="text-[15px] font-bold text-slate-900 leading-snug cursor-pointer hover:text-blue-600 transition-colors"
-                        >
-                          {clinica.nome}
-                        </h3>
-                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                          {clinica.bairro} — {clinica.endereco}
-                        </p>
-                      </div>
+            return (
+              <div
+                key={clinica.id}
+                onClick={() => navigate(urlProf)}
+                className="bg-white rounded-2xl border border-slate-200/90 hover:border-blue-400 hover:shadow-md transition-all p-6 flex flex-col justify-between group cursor-pointer"
+              >
+                <div>
+                  <div className="flex items-start gap-3.5 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                      </svg>
                     </div>
-
-                    <div className="flex flex-wrap gap-2 mb-6">
-                      {(clinica.especialidades || ['Clínica Geral']).map((esp) => (
-                        <span
-                          key={esp}
-                          className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/50"
-                        >
-                          {esp}
-                        </span>
-                      ))}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-[16px] font-bold text-slate-900 leading-snug group-hover:text-blue-600 transition-colors">
+                        {clinica.nome}
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                        {clinica.bairro} — {clinica.endereco}
+                      </p>
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-medium">
-                      {clinica.telefone || 'Não informado'}
-                    </span>
-                    <button
-                      onClick={() => navigate(urlProf)}
-                      className="text-blue-600 hover:text-blue-800 font-bold transition-colors flex items-center gap-1 cursor-pointer hover:underline"
-                    >
-                      {labelProf}
-                    </button>
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    {(clinica.especialidades || ['Clínica Geral']).map((esp) => (
+                      <span
+                        key={esp}
+                        className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/50"
+                      >
+                        {esp}
+                      </span>
+                    ))}
                   </div>
                 </div>
-              )
+
+                <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25z" />
+                    </svg>
+                    {clinica.telefone || 'Telefone não informado'}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(urlProf)
+                    }}
+                    className="px-4 py-2 bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs group-hover:bg-blue-600 group-hover:text-white"
+                  >
+                    <span>Ver profissionais ({qtdProf})</span>
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )
           })}
         </div>
       )}
