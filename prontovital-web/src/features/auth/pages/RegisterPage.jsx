@@ -105,13 +105,16 @@ function PainelEsquerdo() {
   return (
     <div className="hidden lg:flex lg:w-[45%] xl:w-[42%] bg-[#1B2438] text-white flex-col justify-between p-10 xl:p-14 min-h-screen rounded-r-3xl">
       <div>
-        <div className="mb-16">
-          <h2 className="text-xl font-bold tracking-tight">
-            Pronto<span className="text-blue-400">Vital</span>
-          </h2>
-          <p className="text-sm text-slate-400 mt-0.5">
-            Plataforma de Saúde Digital
-          </p>
+        <div className="mb-14 flex items-center gap-3.5">
+          <img src="/logo.png" alt="ProntoVital" className="w-12 h-12 rounded-xl object-contain bg-white p-1 shadow-md" />
+          <div>
+            <h2 className="text-xl font-bold tracking-tight">
+              Pronto<span className="text-blue-400">Vital</span>
+            </h2>
+            <p className="text-sm text-slate-400 mt-0.5">
+              Plataforma de Saúde Digital
+            </p>
+          </div>
         </div>
 
         <div className="mb-10">
@@ -449,12 +452,17 @@ export default function RegisterPage() {
 
       <div className="flex-1 flex flex-col">
         <div className="lg:hidden px-6 pt-10 pb-4 bg-[#1B2438] text-white">
-          <h2 className="text-lg font-bold tracking-tight">
-            Pronto<span className="text-blue-400">Vital</span>
-          </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Plataforma de Saúde Digital
-          </p>
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="ProntoVital" className="w-10 h-10 rounded-xl object-contain bg-white p-1 shadow-md" />
+            <div>
+              <h2 className="text-lg font-bold tracking-tight">
+                Pronto<span className="text-blue-400">Vital</span>
+              </h2>
+              <p className="text-xs text-slate-400">
+                Plataforma de Saúde Digital
+              </p>
+            </div>
+          </div>
           <h1 className="text-xl font-extrabold mt-6 leading-tight">
             Do primeiro sintoma ao atendimento.
           </h1>

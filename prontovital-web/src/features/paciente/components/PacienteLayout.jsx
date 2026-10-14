@@ -88,9 +88,12 @@ export default function PacienteLayout() {
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row font-sans">
 
       <header className="md:hidden bg-white border-b border-slate-200 px-4 py-3.5 flex items-center justify-between sticky top-0 z-40">
-        <h1 className="text-xl font-bold tracking-tight text-slate-800">
-          Pronto<span className="text-blue-600">Vital</span>
-        </h1>
+        <div className="flex items-center gap-2.5">
+          <img src="/logo.png" alt="ProntoVital" className="w-8 h-8 object-contain rounded-lg shadow-2xs" />
+          <h1 className="text-xl font-bold tracking-tight text-slate-800">
+            Pronto<span className="text-blue-600">Vital</span>
+          </h1>
+        </div>
         <button
           onClick={() => setMenuAbertoMobile(!menuAbertoMobile)}
           className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
@@ -152,9 +155,12 @@ export default function PacienteLayout() {
       <aside className="w-[260px] lg:w-[280px] bg-white border-r border-slate-200 hidden md:flex flex-col justify-between shrink-0 sticky top-0 h-screen">
         <div>
           <div className="px-7 pt-7 pb-5">
-            <h1 className="text-[22px] font-bold tracking-tight text-slate-900">
-              Pronto<span className="text-blue-600">Vital</span>
-            </h1>
+            <div className="flex items-center gap-3">
+              <img src="/logo.png" alt="ProntoVital" className="w-9 h-9 object-contain rounded-xl shadow-2xs" />
+              <h1 className="text-[22px] font-bold tracking-tight text-slate-900">
+                Pronto<span className="text-blue-600">Vital</span>
+              </h1>
+            </div>
           </div>
 
           <div className="px-6 py-4 mb-2">
