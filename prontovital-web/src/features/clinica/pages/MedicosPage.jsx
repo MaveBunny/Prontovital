@@ -4,6 +4,8 @@ import api from '../../../lib/api'
 import {
   listarEspecialidades,
   vincularEspecialidade,
+  obterEspecialidadeSalva,
+  salvarEspecialidadeLocal,
   LISTA_ESPECIALIDADES_PADRAO
 } from '../../../lib/profissionaisApi'
 
@@ -56,8 +58,10 @@ export default function MedicosPage() {
               ? `${p.uf_registro}-${p.registro_profissional}`
               : (p.registro_profissional || 'Não informado')
 
-            const espNome = p.Especialidade?.nome || p.especialidade || 'Sem especialidade vinculada'
-            const idEsp = p.Especialidade?.id_especialidade || p.id_especialidade || null
+            const vinculoLocal = obterEspecialidadeSalva(p.id_profissional)
+            const idEsp = p.Especialidade?.id_especialidade || p.id_especialidade || vinculoLocal?.id_especialidade || null
+            const espObj = listaEspecialidades.find((e) => String(e.id_especialidade) === String(idEsp))
+            const espNome = p.Especialidade?.nome || vinculoLocal?.nome || espObj?.nome || p.especialidade || 'Clínica Geral'
 
             return {
               id: p.id_profissional,
@@ -105,12 +109,12 @@ export default function MedicosPage() {
     setMensagemSucesso('')
 
     try {
-      await vincularEspecialidade(medicoSelecionado.id, espSelecionada)
-
       const espEncontrada = listaEspecialidades.find(
         (e) => String(e.id_especialidade) === String(espSelecionada)
       )
       const novoNome = espEncontrada?.nome || 'Especialidade vinculada'
+
+      salvarEspecialidadeLocal(medicoSelecionado.id, espSelecionada, novoNome)
 
       setMedicoSelecionado((prev) => ({
         ...prev,
@@ -125,6 +129,8 @@ export default function MedicosPage() {
             : m
         )
       )
+
+      await vincularEspecialidade(medicoSelecionado.id, espSelecionada)
 
       setMensagemSucesso('Especialidade vinculada com sucesso!')
       setModoEdicaoEsp(false)

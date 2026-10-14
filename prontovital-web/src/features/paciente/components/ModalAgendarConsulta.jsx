@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import api from '../../../lib/api'
 import { agendarConsulta } from '../../../lib/agendamentosApi'
+import { obterEspecialidadeSalva, LISTA_ESPECIALIDADES_PADRAO } from '../../../lib/profissionaisApi'
 
 const DIAS_SEMANA_NOMES = [
   { dia: 0, nomeCurto: 'Dom', nomeCompleto: 'Domingo' },
@@ -65,11 +66,16 @@ export default function ModalAgendarConsulta({
       if (Array.isArray(data) && data.length > 0) {
         const formatados = data.map((p) => {
           const clinicaObj = p.Clinicas?.[0]
+          const vinculoLocal = obterEspecialidadeSalva(p.id_profissional || p.id)
+          const idEsp = p.Especialidade?.id_especialidade || p.id_especialidade || vinculoLocal?.id_especialidade || null
+          const espObj = LISTA_ESPECIALIDADES_PADRAO.find((e) => String(e.id_especialidade) === String(idEsp))
+          const espNome = p.Especialidade?.nome || vinculoLocal?.nome || espObj?.nome || p.especialidade || 'Clínica Geral'
+
           return {
             id: p.id_profissional || p.id,
             id_profissional: p.id_profissional || p.id,
             nome: p.User?.nome || p.nome || 'Médico(a)',
-            especialidade: p.Especialidade?.nome || p.especialidade || 'Clínica Geral',
+            especialidade: espNome,
             clinica: clinicaObj?.User?.nome || p.clinica || 'Sem clínica vinculada',
             id_clinica: clinicaObj?.id_clinica || p.id_clinica || null,
             iniciais: (p.User?.nome || p.nome || 'DR')

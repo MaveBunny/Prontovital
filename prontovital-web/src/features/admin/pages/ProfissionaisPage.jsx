@@ -3,6 +3,8 @@ import api from '../../../lib/api'
 import {
   listarEspecialidades,
   vincularEspecialidade,
+  obterEspecialidadeSalva,
+  salvarEspecialidadeLocal,
   LISTA_ESPECIALIDADES_PADRAO
 } from '../../../lib/profissionaisApi'
 
@@ -80,8 +82,10 @@ export default function ProfissionaisPage() {
             ? `${p.uf_registro}-${p.registro_profissional}`
             : (p.registro_profissional || 'Não informado')
 
-          const espNome = p.Especialidade?.nome || p.especialidade || 'Sem especialidade'
-          const idEsp = p.Especialidade?.id_especialidade || p.id_especialidade || null
+          const vinculoLocal = obterEspecialidadeSalva(p.id_profissional)
+          const idEsp = p.Especialidade?.id_especialidade || p.id_especialidade || vinculoLocal?.id_especialidade || null
+          const espObj = listaEsp.find(e => String(e.id_especialidade) === String(idEsp))
+          const espNome = p.Especialidade?.nome || vinculoLocal?.nome || espObj?.nome || p.especialidade || 'Sem especialidade'
 
           return {
             id: p.id_profissional,
@@ -151,7 +155,16 @@ export default function ProfissionaisPage() {
       }
 
       const { data: usuarioCriado } = await api.post('/usuarios', payload)
-      const idProfissionalCriado = usuarioCriado.id_profissional
+      const idProfissionalCriado = usuarioCriado?.id_profissional || usuarioCriado?.profissional?.id_profissional || usuarioCriado?.id
+
+      const espObjSelecionada = especialidadesDisponiveis.find(
+        (e) => String(e.id_especialidade) === String(form.id_especialidade)
+      )
+      const nomeEspSelecionada = espObjSelecionada?.nome || 'Especialidade vinculada'
+
+      if (idProfissionalCriado) {
+        salvarEspecialidadeLocal(idProfissionalCriado, form.id_especialidade, nomeEspSelecionada)
+      }
 
       if (form.id_clinica && idProfissionalCriado) {
         try {
@@ -211,6 +224,21 @@ export default function ProfissionaisPage() {
     if (!medicoParaVincular || !especialidadeSelecionadaModal) return
     setSalvandoEspecialidade(true)
     try {
+      const espObj = especialidadesDisponiveis.find(
+        (e) => String(e.id_especialidade) === String(especialidadeSelecionadaModal)
+      )
+      const novoNome = espObj?.nome || 'Especialidade vinculada'
+
+      salvarEspecialidadeLocal(medicoParaVincular.id, especialidadeSelecionadaModal, novoNome)
+
+      setProfissionais(prev =>
+        prev.map(p =>
+          p.id === medicoParaVincular.id
+            ? { ...p, id_especialidade: Number(especialidadeSelecionadaModal), especialidade: novoNome }
+            : p
+        )
+      )
+
       await vincularEspecialidade(medicoParaVincular.id, especialidadeSelecionadaModal)
       await carregarDados(busca)
       fecharModalVincular()

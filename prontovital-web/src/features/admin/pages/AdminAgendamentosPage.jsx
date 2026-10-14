@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../../../lib/api'
+import { obterEspecialidadeSalva } from '../../../lib/profissionaisApi'
 
 export default function AdminAgendamentosPage() {
   const [loading, setLoading] = useState(true)
@@ -44,7 +45,9 @@ export default function AdminAgendamentosPage() {
         const formatados = data.map((item) => {
           const nomePaciente = item.Paciente?.User?.nome || 'Paciente'
           const nomeProfissional = item.Profissional?.User?.nome || 'Profissional'
-          const especialidade = item.Profissional?.Especialidade?.nome || ''
+          const idProf = item.Profissional?.id_profissional || item.id_profissional
+          const espSalva = idProf ? (obterEspecialidadeSalva(idProf)?.nome || '') : ''
+          const especialidade = item.Profissional?.Especialidade?.nome || espSalva || ''
           const subInfo = especialidade ? `${nomeProfissional} · ${especialidade}` : nomeProfissional
 
           let dataFormatada = item.data_agendamento || ''
@@ -531,11 +534,14 @@ export default function AdminAgendamentosPage() {
                     {profissionais.length === 0 ? (
                       <option value="">Nenhum profissional cadastrado</option>
                     ) : (
-                      profissionais.map((prof) => (
-                        <option key={prof.id_profissional} value={prof.id_profissional}>
-                          {prof.User?.nome || `Médico #${prof.id_profissional}`} {prof.registro_profissional ? `(CRM: ${prof.registro_profissional})` : ''}
-                        </option>
-                      ))
+                      profissionais.map((prof) => {
+                        const espNome = prof.Especialidade?.nome || obterEspecialidadeSalva(prof.id_profissional)?.nome || ''
+                        return (
+                          <option key={prof.id_profissional} value={prof.id_profissional}>
+                            {prof.User?.nome || `Médico #${prof.id_profissional}`} {prof.registro_profissional ? `(CRM: ${prof.registro_profissional})` : ''}{espNome ? ` - ${espNome}` : ''}
+                          </option>
+                        )
+                      })
                     )}
                   </select>
                 </div>

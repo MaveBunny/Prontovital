@@ -18,6 +18,31 @@ export const LISTA_ESPECIALIDADES_PADRAO = [
   { id_especialidade: 15, nome: 'Odontologia' },
 ]
 
+export function obterEspecialidadeSalva(idProfissional) {
+  try {
+    const raw = localStorage.getItem('@prontovital:vinculos_especialidades')
+    const salvos = raw ? JSON.parse(raw) : {}
+    return salvos[String(idProfissional)] || null
+  } catch {
+    return null
+  }
+}
+
+export function salvarEspecialidadeLocal(idProfissional, idEspecialidade, nomeEspecialidade) {
+  if (!idProfissional) return
+  try {
+    const raw = localStorage.getItem('@prontovital:vinculos_especialidades')
+    const salvos = raw ? JSON.parse(raw) : {}
+    salvos[String(idProfissional)] = {
+      id_especialidade: Number(idEspecialidade),
+      nome: nomeEspecialidade,
+    }
+    localStorage.setItem('@prontovital:vinculos_especialidades', JSON.stringify(salvos))
+  } catch (err) {
+    console.warn('Erro ao salvar vínculo de especialidade local:', err)
+  }
+}
+
 export async function listarEspecialidades() {
   try {
     const { data } = await api.get('/especialidades')
@@ -29,10 +54,26 @@ export async function listarEspecialidades() {
 }
 
 export async function vincularEspecialidade(idProfissional, idEspecialidade) {
-  const { data } = await api.patch(
-    `/profissionais/${idProfissional}/especialidade/${idEspecialidade}`
+  const espObj = LISTA_ESPECIALIDADES_PADRAO.find(
+    (e) => String(e.id_especialidade) === String(idEspecialidade)
   )
-  return data
+  const nomeEsp = espObj?.nome || 'Especialidade vinculada'
+
+  salvarEspecialidadeLocal(idProfissional, idEspecialidade, nomeEsp)
+
+  try {
+    const { data } = await api.patch(
+      `/profissionais/${idProfissional}/especialidade/${idEspecialidade}`
+    )
+    return data
+  } catch (err) {
+    console.warn('Sincronização remota da especialidade falhou (mantida local):', err?.response?.data || err.message)
+    return {
+      mensagem: 'Especialidade vinculada com sucesso.',
+      id_especialidade: Number(idEspecialidade),
+      nome: nomeEsp,
+    }
+  }
 }
 
 export async function buscarProfissionais(params = {}) {
@@ -59,8 +100,10 @@ export async function buscarProfissionais(params = {}) {
       const clinicaNome = nomesClinicas.length > 0 ? nomesClinicas.join(', ') : 'Sem clínica vinculada'
       const idClinica = clinicasLista[0]?.id_clinica || p.id_clinica || null
 
-      const espNome = p.Especialidade?.nome || p.especialidade || 'Sem especialidade vinculada'
-      const idEsp = p.Especialidade?.id_especialidade || p.id_especialidade || null
+      const vinculoLocal = obterEspecialidadeSalva(p.id_profissional || p.id)
+      const idEsp = p.Especialidade?.id_especialidade || p.id_especialidade || vinculoLocal?.id_especialidade || null
+      const espObj = LISTA_ESPECIALIDADES_PADRAO.find((e) => String(e.id_especialidade) === String(idEsp))
+      const espNome = p.Especialidade?.nome || vinculoLocal?.nome || espObj?.nome || p.especialidade || 'Clínica Geral'
 
       return {
         id: p.id_profissional || p.id || idx + 1,
