@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../../shared/hooks/useAuth'
 import api from '../../../lib/api'
+import {
+  listarEspecialidades,
+  vincularEspecialidade,
+  LISTA_ESPECIALIDADES_PADRAO
+} from '../../../lib/profissionaisApi'
 
 export default function MedicosPage() {
   const { usuario } = useAuth()
@@ -8,8 +13,30 @@ export default function MedicosPage() {
   const [loading, setLoading] = useState(true)
   const [medicoSelecionado, setMedicoSelecionado] = useState(null)
 
+  // Estado para vincular/alterar especialidade
+  const [listaEspecialidades, setListaEspecialidades] = useState(LISTA_ESPECIALIDADES_PADRAO)
+  const [modoEdicaoEsp, setModoEdicaoEsp] = useState(false)
+  const [espSelecionada, setEspSelecionada] = useState('1')
+  const [salvandoEsp, setSalvandoEsp] = useState(false)
+  const [mensagemSucesso, setMensagemSucesso] = useState('')
+  const [erroEsp, setErroEsp] = useState('')
+
   const nomeClinica = usuario?.nome || 'Clínica'
   const idClinica = usuario?.id_clinica || usuario?.id || usuario?.id_user
+
+  useEffect(() => {
+    async function carregarEspecialidades() {
+      try {
+        const dados = await listarEspecialidades()
+        if (Array.isArray(dados) && dados.length > 0) {
+          setListaEspecialidades(dados)
+        }
+      } catch {
+        setListaEspecialidades(LISTA_ESPECIALIDADES_PADRAO)
+      }
+    }
+    carregarEspecialidades()
+  }, [])
 
   useEffect(() => {
     async function carregarMedicosDaClinica() {
@@ -30,6 +57,9 @@ export default function MedicosPage() {
               ? `${p.uf_registro}-${p.registro_profissional}`
               : (p.registro_profissional || 'Não informado')
 
+            const espNome = p.Especialidade?.nome || p.especialidade || 'Sem especialidade vinculada'
+            const idEsp = p.Especialidade?.id_especialidade || p.id_especialidade || null
+
             return {
               id: p.id_profissional,
               iniciais,
@@ -39,6 +69,8 @@ export default function MedicosPage() {
               registro: p.registro_profissional || 'Não informado',
               uf: p.uf_registro || '',
               cpf: p.cpf || 'Não informado',
+              id_especialidade: idEsp,
+              especialidade: espNome,
               email: p.User?.email || 'Não informado',
               telefone: p.User?.telefone || 'Não informado',
               cidade: p.User?.cidade || '',
@@ -58,6 +90,55 @@ export default function MedicosPage() {
 
     carregarMedicosDaClinica()
   }, [idClinica, nomeClinica])
+
+  function handleAbrirModal(medico) {
+    setMedicoSelecionado(medico)
+    setEspSelecionada(String(medico.id_especialidade || '1'))
+    setModoEdicaoEsp(false)
+    setMensagemSucesso('')
+    setErroEsp('')
+  }
+
+  async function handleSalvarEspecialidade() {
+    if (!medicoSelecionado || !espSelecionada) return
+    setSalvandoEsp(true)
+    setErroEsp('')
+    setMensagemSucesso('')
+
+    try {
+      await vincularEspecialidade(medicoSelecionado.id, espSelecionada)
+
+      const espEncontrada = listaEspecialidades.find(
+        (e) => String(e.id_especialidade) === String(espSelecionada)
+      )
+      const novoNome = espEncontrada?.nome || 'Especialidade vinculada'
+
+      // Atualiza o médico no modal
+      setMedicoSelecionado((prev) => ({
+        ...prev,
+        id_especialidade: Number(espSelecionada),
+        especialidade: novoNome,
+      }))
+
+      // Atualiza na lista de médicos
+      setMedicos((prev) =>
+        prev.map((m) =>
+          m.id === medicoSelecionado.id
+            ? { ...m, id_especialidade: Number(espSelecionada), especialidade: novoNome }
+            : m
+        )
+      )
+
+      setMensagemSucesso('Especialidade vinculada com sucesso!')
+      setModoEdicaoEsp(false)
+    } catch (err) {
+      console.error('Erro ao vincular especialidade:', err)
+      const msg = err.response?.data?.erro || err.response?.data?.mensagem || 'Erro ao vincular especialidade ao médico.'
+      setErroEsp(msg)
+    } finally {
+      setSalvandoEsp(false)
+    }
+  }
 
   return (
     <div className="p-8 lg:p-12 w-full animate-[fadeIn_0.3s_ease-out] relative min-h-screen">
@@ -79,7 +160,7 @@ export default function MedicosPage() {
             medicos.map((medico) => (
               <div
                 key={medico.id}
-                onClick={() => setMedicoSelecionado(medico)}
+                onClick={() => handleAbrirModal(medico)}
                 className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center justify-between hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group"
               >
 
@@ -92,9 +173,15 @@ export default function MedicosPage() {
                     <h3 className="text-[16px] font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
                       {medico.nome}
                     </h3>
-                    <p className="text-[14px] text-slate-500 mt-0.5">
-                      CRM: {medico.crm}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <p className="text-[13px] text-slate-500">
+                        CRM: {medico.crm}
+                      </p>
+                      <span className="text-slate-300">•</span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/50">
+                        {medico.especialidade}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -117,7 +204,7 @@ export default function MedicosPage() {
         </div>
       )}
 
-      {/* ── Modal de Detalhes do Profissional (sem o campo de endereço) ── */}
+      {/* ── Modal de Detalhes do Profissional com Vínculo de Especialidade ── */}
       {medicoSelecionado && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-[fadeIn_0.2s_ease-out]"
@@ -148,7 +235,7 @@ export default function MedicosPage() {
 
               <button
                 onClick={() => setMedicoSelecionado(null)}
-                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-colors"
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
                 title="Fechar"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -157,7 +244,26 @@ export default function MedicosPage() {
               </button>
             </div>
 
-            {/* Informações (exceto endereço residencial) */}
+            {/* Alertas de Sucesso / Erro */}
+            {mensagemSucesso && (
+              <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-xl flex items-center gap-2 animate-[fadeIn_0.2s_ease]">
+                <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                {mensagemSucesso}
+              </div>
+            )}
+
+            {erroEsp && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-center gap-2 animate-[fadeIn_0.2s_ease]">
+                <svg className="w-4 h-4 text-red-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                {erroEsp}
+              </div>
+            )}
+
+            {/* Informações Profissionais */}
             <div className="py-5 space-y-4">
               <div>
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5">
@@ -174,6 +280,66 @@ export default function MedicosPage() {
                       {medicoSelecionado.registro} {medicoSelecionado.uf ? `(${medicoSelecionado.uf})` : ''}
                     </span>
                   </div>
+
+                  {/* Campo de Especialidade com Botão para Vincular */}
+                  <div className="col-span-2 pt-2.5 border-t border-slate-200/60">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="block text-xs text-slate-500 font-medium">Especialidade</span>
+                        <span className="block text-sm font-bold text-blue-700 mt-0.5">
+                          {medicoSelecionado.especialidade}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setModoEdicaoEsp((prev) => !prev)}
+                        className="px-3 py-1.5 text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white rounded-lg border border-blue-200 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                        </svg>
+                        <span>{modoEdicaoEsp ? 'Cancelar' : 'Vincular Especialidade'}</span>
+                      </button>
+                    </div>
+
+                    {/* Formulário Inline de Vinculação */}
+                    {modoEdicaoEsp && (
+                      <div className="mt-3 p-3 bg-white border border-blue-200 rounded-xl space-y-2.5 shadow-xs animate-[fadeIn_0.2s_ease]">
+                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                          Escolha a nova especialidade:
+                        </label>
+                        <select
+                          value={espSelecionada}
+                          onChange={(e) => setEspSelecionada(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        >
+                          {listaEspecialidades.map((esp) => (
+                            <option key={esp.id_especialidade} value={esp.id_especialidade}>
+                              {esp.nome}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="flex justify-end gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setModoEdicaoEsp(false)}
+                            className="px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSalvarEspecialidade}
+                            disabled={salvandoEsp}
+                            className="px-4 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg shadow-sm cursor-pointer"
+                          >
+                            {salvandoEsp ? 'Salvando...' : 'Confirmar Vínculo'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {medicoSelecionado.cpf && medicoSelecionado.cpf !== 'Não informado' && (
                     <div className="col-span-2 pt-2 border-t border-slate-200/60">
                       <span className="block text-xs text-slate-500 font-medium">CPF</span>
@@ -245,12 +411,6 @@ export default function MedicosPage() {
           </div>
         </div>
       )}
-
-      <button className="fixed bottom-6 right-6 w-12 h-12 bg-slate-800 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-slate-900 transition-colors">
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-        </svg>
-      </button>
 
     </div>
   )
