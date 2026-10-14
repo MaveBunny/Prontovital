@@ -56,9 +56,10 @@ export default function ModalAgendarConsulta({
               .toUpperCase() || 'DR',
           }
         })
-        setProfissionais(formatados)
-        if (!medicoPreSelecionado && formatados.length > 0) {
-          setMedicoId(formatados[0].id)
+        const vinculados = formatados.filter((p) => p.id_clinica)
+        setProfissionais(vinculados)
+        if (!medicoPreSelecionado && vinculados.length > 0) {
+          setMedicoId(vinculados[0].id)
         }
       } else {
         setProfissionais([])

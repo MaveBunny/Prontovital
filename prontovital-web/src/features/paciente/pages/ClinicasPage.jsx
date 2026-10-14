@@ -85,53 +85,58 @@ export default function ClinicasPage() {
             const qtdProf = clinica.totalProfissionais || 0
             const labelProf = qtdProf === 1 ? '1 profissional >' : `${qtdProf} profissionais >`
 
-            return (
-              <div
-                key={clinica.id}
-                className="bg-white rounded-2xl border border-slate-200/90 hover:border-blue-300 hover:shadow-md transition-all p-6 flex flex-col justify-between group"
-              >
-                <div>
-                  <div className="flex items-start gap-3.5 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                      </svg>
+              const urlProf = `/paciente/profissionais?clinica=${clinica.id_clinica}&nome=${encodeURIComponent(clinica.nome)}`
+
+              return (
+                <div
+                  key={clinica.id}
+                  className="bg-white rounded-2xl border border-slate-200/90 hover:border-blue-300 hover:shadow-md transition-all p-6 flex flex-col justify-between group"
+                >
+                  <div>
+                    <div className="flex items-start gap-3.5 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3
+                          onClick={() => navigate(urlProf)}
+                          className="text-[15px] font-bold text-slate-900 leading-snug cursor-pointer hover:text-blue-600 transition-colors"
+                        >
+                          {clinica.nome}
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                          {clinica.bairro} — {clinica.endereco}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-[15px] font-bold text-slate-900 leading-snug">
-                        {clinica.nome}
-                      </h3>
-                      <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                        {clinica.bairro} — {clinica.endereco}
-                      </p>
+
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {(clinica.especialidades || ['Clínica Geral']).map((esp) => (
+                        <span
+                          key={esp}
+                          className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/50"
+                        >
+                          {esp}
+                        </span>
+                      ))}
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {(clinica.especialidades || ['Clínica Geral']).map((esp) => (
-                      <span
-                        key={esp}
-                        className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/50"
-                      >
-                        {esp}
-                      </span>
-                    ))}
+                  <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-medium">
+                      {clinica.telefone || 'Não informado'}
+                    </span>
+                    <button
+                      onClick={() => navigate(urlProf)}
+                      className="text-blue-600 hover:text-blue-800 font-bold transition-colors flex items-center gap-1 cursor-pointer hover:underline"
+                    >
+                      {labelProf}
+                    </button>
                   </div>
                 </div>
-
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="text-slate-500 font-medium">
-                    {clinica.telefone || 'Não informado'}
-                  </span>
-                  <button
-                    onClick={() => navigate('/paciente/profissionais')}
-                    className="text-blue-600 hover:text-blue-700 font-bold transition-colors flex items-center gap-1 cursor-pointer"
-                  >
-                    {labelProf}
-                  </button>
-                </div>
-              </div>
-            )
+              )
           })}
         </div>
       )}

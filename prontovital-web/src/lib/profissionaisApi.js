@@ -15,9 +15,14 @@ export async function buscarProfissionais(params = {}) {
         .join('')
         .toUpperCase() || 'DR'
 
-      const clinicaObj = p.Clinicas?.[0]
-      const clinicaNome = clinicaObj?.User?.nome || p.clinica || 'Clínica ProntoVital'
-      const idClinica = clinicaObj?.id_clinica || p.id_clinica || null
+      const rawClinicas = Array.isArray(p.Clinicas) ? p.Clinicas : []
+      const clinicasLista = rawClinicas.map((c) => ({
+        id_clinica: c.id_clinica,
+        nome: c.User?.nome || c.nome || 'Clínica',
+      }))
+      const nomesClinicas = clinicasLista.map((c) => c.nome).filter(Boolean)
+      const clinicaNome = nomesClinicas.length > 0 ? nomesClinicas.join(', ') : 'Sem clínica vinculada'
+      const idClinica = clinicasLista[0]?.id_clinica || p.id_clinica || null
 
       return {
         id: p.id_profissional || p.id || idx + 1,
@@ -33,6 +38,7 @@ export async function buscarProfissionais(params = {}) {
         uf_registro: p.uf_registro || '',
         clinica: clinicaNome,
         id_clinica: idClinica,
+        clinicas: clinicasLista,
         telefone: p.User?.telefone || p.telefone || '',
         email: p.User?.email || p.email || '',
       }
